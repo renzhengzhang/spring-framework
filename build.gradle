@@ -20,7 +20,15 @@ configure(allprojects) { project ->
 	apply plugin: "org.springframework.build.localdev"
 	group = "org.springframework"
 	repositories {
-		mavenCentral()
+		// 优先使用本地仓库
+		mavenLocal()
+
+		// 添加阿里云镜像
+		maven { url 'https://maven.aliyun.com/repository/public' }
+		maven { url 'https://maven.aliyun.com/repository/google' }
+		maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+
+		// 保留 Spring 官方仓库
 		maven {
 			url "https://repo.spring.io/milestone"
 			content {
@@ -42,6 +50,7 @@ configure(allprojects) { project ->
 		}
 	}
 }
+
 
 configure(allprojects - project(":framework-platform")) {
 	configurations {
