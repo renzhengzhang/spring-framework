@@ -26,6 +26,9 @@ import org.springframework.lang.Nullable;
  *
  * <p>The {@link ConfigurableBeanFactory} interface extends this interface.
  *
+ * <p>
+ * 用于共享单例实例的注册器
+ *
  * @author Juergen Hoeller
  * @since 2.0
  * @see ConfigurableBeanFactory
@@ -49,6 +52,14 @@ public interface SingletonBeanRegistry {
 	 * for runtime registration of singletons. As a consequence, a registry
 	 * implementation should synchronize singleton access; it will have to do
 	 * this anyway if it supports a BeanFactory's lazy initialization of singletons.
+	 *
+	 * <p>
+	 * 使用 beanName 注册一个单例实例
+	 * <p>
+	 * 给定的实例应该是已经完全初始化的。本注册器不会调用任何初始化回调，例如 InitializingBean 的 afterPropertiesSet 方法，
+	 * DisposableBean 的 destroy 方法
+	 *
+	 *
 	 * @param beanName the name of the bean
 	 * @param singletonObject the existing singleton object
 	 * @see org.springframework.beans.factory.InitializingBean#afterPropertiesSet
@@ -105,6 +116,12 @@ public interface SingletonBeanRegistry {
 	 * (see {@link #registerSingleton}). Can also be used to check which singletons
 	 * defined by a bean definition have already been created.
 	 * @return the list of names as a String array (never {@code null})
+	 *
+	 * <p>
+	 * 返回在注册器中注册的单例 bean 的名称
+	 * <p>
+	 * 仅检查已经实例化的单例 bean，不会计算未实例化的单例 bean definitions
+	 *
 	 * @see #registerSingleton
 	 * @see org.springframework.beans.factory.support.BeanDefinitionRegistry#getBeanDefinitionNames
 	 * @see org.springframework.beans.factory.ListableBeanFactory#getBeanDefinitionNames
@@ -118,6 +135,12 @@ public interface SingletonBeanRegistry {
 	 * <p>The main purpose of this method is to check manually registered singletons
 	 * (see {@link #registerSingleton}). Can also be used to count the number of
 	 * singletons defined by a bean definition that have already been created.
+	 *
+	 * <p>
+	 * 返回在注册器中注册的单例 bean 的数量
+	 * <p>
+	 * 仅检查已经实例化的单例 bean，不会计算未实例化的单例 bean definitions
+	 *
 	 * @return the number of singleton beans
 	 * @see #registerSingleton
 	 * @see org.springframework.beans.factory.support.BeanDefinitionRegistry#getBeanDefinitionCount

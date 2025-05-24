@@ -53,6 +53,9 @@ import org.springframework.util.Assert;
  * defining parent dependencies, not 'hard-coding' the role as a root bean definition,
  * even supporting parent relationship changes in the bean post-processor phase.
  *
+ * <p>
+ * {@link RootBeanDefinition} 表示 'merged' BeanDefinition，可能是通过多个原始的 BeanDefinition 因继承关系组合而来。
+ *
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -222,7 +225,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	 * @param pvs the property values to apply
 	 */
 	public RootBeanDefinition(@Nullable Class<?> beanClass, @Nullable ConstructorArgumentValues cargs,
-			@Nullable MutablePropertyValues pvs) {
+							  @Nullable MutablePropertyValues pvs) {
 
 		super(cargs, pvs);
 		setBeanClass(beanClass);

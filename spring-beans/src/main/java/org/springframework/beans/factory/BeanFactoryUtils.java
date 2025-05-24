@@ -74,6 +74,15 @@ public abstract class BeanFactoryUtils {
 	/**
 	 * Return the actual bean name, stripping out the factory dereference
 	 * prefix (if any, also stripping repeated factory prefixes if found).
+	 *
+	 * <p>
+	 * 获取 FactoryBean 解引用的实际名称，例如：
+	 * <ul>
+	 *     <li>"myFactoryBean" -&gt; "myFactoryBean"</li>
+	 *     <li>"&amp;myFactoryBean" -&gt; "myFactoryBean"</li>
+	 *     <li>"&amp;&amp;myFactoryBean" -&gt; "myFactoryBean"</li>
+	 * </ul>
+	 *
 	 * @param name the name of the bean
 	 * @return the transformed name
 	 * @see BeanFactory#FACTORY_BEAN_PREFIX
