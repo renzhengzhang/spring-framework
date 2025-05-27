@@ -284,6 +284,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		else {
 			// Fail if we're already creating this bean instance:
 			// We're assumable within a circular reference.
+			// Prototype Bean 不支持循环引用
 			if (isPrototypeCurrentlyInCreation(beanName)) {
 				throw new BeanCurrentlyInCreationException(beanName);
 			}
@@ -1614,9 +1615,12 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			throws CannotLoadBeanClassException {
 
 		try {
+			// hasBeanClass() 说明已经解析过了且不是动态解析的，直接拿缓存结果；
 			if (mbd.hasBeanClass()) {
 				return mbd.getBeanClass();
 			}
+
+			// 没有解析过，或者需要动态解析，则调用 doResolveBeanClass
 			return doResolveBeanClass(mbd, typesToMatch);
 		}
 		catch (ClassNotFoundException ex) {
@@ -1627,17 +1631,25 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		}
 	}
 
+	/**
+	 * 解析 BeanDefinition 的类名并加载对应的 Class 对象
+	 */
 	@Nullable
 	private Class<?> doResolveBeanClass(RootBeanDefinition mbd, Class<?>... typesToMatch)
 			throws ClassNotFoundException {
 
 		ClassLoader beanClassLoader = getBeanClassLoader();
 		ClassLoader dynamicLoader = beanClassLoader;
+
+		// 是否使用动态类加载器解析
 		boolean freshResolve = false;
 
+		// 排除不需要被临时类加载器处理的类型，确保类型不被临时类加载器修改，保持原始类定义
 		if (!ObjectUtils.isEmpty(typesToMatch)) {
 			// When just doing type checks (i.e. not creating an actual instance yet),
 			// use the specified temporary class loader (e.g. in a weaving scenario).
+			// 当需要临时检查 Bean 类型（如 AOP 代理生成）时，使用临时类加载器（如 OverridingClassLoader）
+			// 临时类加载器用于动态生成类（如织入切面后的增强类）
 			ClassLoader tempClassLoader = getTempClassLoader();
 			if (tempClassLoader != null) {
 				dynamicLoader = tempClassLoader;
@@ -1652,6 +1664,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 		String className = mbd.getBeanClassName();
 		if (className != null) {
+			// 解析 Bean 类名中的 SpEL 表达式，例如 "${my.bean.class}"，返回实际的类名或 Class 对象
 			Object evaluated = evaluateBeanDefinitionString(className, mbd);
 			if (!className.equals(evaluated)) {
 				// A dynamically resolved expression, supported as of 4.2...
@@ -1660,12 +1673,15 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				}
 				else if (evaluated instanceof String name) {
 					className = name;
+					// 不将解析结果存入 BeanDefinition，避免污染原始定义
 					freshResolve = true;
 				}
 				else {
 					throw new IllegalStateException("Invalid class name expression result: " + evaluated);
 				}
 			}
+
+			// 使用动态类加载器解析
 			if (freshResolve) {
 				// When resolving against a temporary class loader, exit early in order
 				// to avoid storing the resolved Class in the bean definition.
@@ -1684,6 +1700,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		}
 
 		// Resolve regularly, caching the result in the BeanDefinition...
+		// 常规解析与缓存 mbd 对应 Bean 的 Class
 		return mbd.resolveBeanClass(beanClassLoader);
 	}
 
@@ -1962,6 +1979,13 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * Determine whether the given bean requires destruction on shutdown.
 	 * <p>The default implementation checks the DisposableBean interface as well as
 	 * a specified destroy method and registered DestructionAwareBeanPostProcessors.
+	 *
+	 * <p>
+	 * 判断是否需要注册销毁回调, 满足以下任意条件时注册：<br/>
+	 * 1. 实现了 DisposableBean 接口；<br/>
+	 * 2. 配置了 destroy 方法；<br/>
+	 * 3. 注册了 DestructionAwareBeanPostProcessors<br/>
+	 *
 	 * @param bean the bean instance to check
 	 * @param mbd the corresponding bean definition
 	 * @see org.springframework.beans.factory.DisposableBean
@@ -1987,6 +2011,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * @see #registerDependentBean
 	 */
 	protected void registerDisposableBeanIfNecessary(String beanName, Object bean, RootBeanDefinition mbd) {
+		// Prototype Bean 每次创建新实例，容器无法跟踪其生命周期，因此不处理
+		// 满足以下任意条件时注册销毁回调：实现 DisposableBean 接口、配置了 destroy 方法、注册了 DestructionAwareBeanPostProcessors
 		if (!mbd.isPrototype() && requiresDestruction(bean, mbd)) {
 			if (mbd.isSingleton()) {
 				// Register a DisposableBean implementation that performs all destruction
