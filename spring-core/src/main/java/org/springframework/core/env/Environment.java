@@ -55,6 +55,14 @@ package org.springframework.core.env;
  * {@link ConfigurableEnvironment} Javadoc for usage examples demonstrating manipulation
  * of property sources prior to application context {@code refresh()}.
  *
+ *
+ * <p>
+ * 表示当前 Application Environment 的核心抽象，模拟了应用程序运行环境的两个关键方面：
+ * <ul>
+ *     <li>配置文件(Profiles)：用于条件性地注册 BeanDefinition</li>
+ *     <li>属性(Properties)：来自各种数据源的 properties，包括 properties 文件、JVM system properties、系统环境变量</li>
+ * </ul>
+ *
  * @author Chris Beams
  * @author Phillip Webb
  * @author Sam Brannen
@@ -77,6 +85,16 @@ public interface Environment extends PropertyResolver {
 	 * conditionally, for example based on deployment environment. Profiles can be
 	 * activated by setting {@linkplain AbstractEnvironment#ACTIVE_PROFILES_PROPERTY_NAME
 	 * "spring.profiles.active"} as a system property or by calling
+	 *
+	 * <p>
+	 * 获取激活的配置文件
+	 * <p>
+	 * <ul>
+	 *     <li>返回当前环境中显式激活的 Profile</li>
+	 *     <li>Profile 用于创建 BeanDefinition 的逻辑分组，只有在 Profile 激活时才会注册</li>
+	 *     <li>可通过设置 {@code spring.profiles.active} 系统属性或调用 {@link ConfigurableEnvironment#setActiveProfiles} 来激活</li>
+	 * </ul>
+	 *
 	 * {@link ConfigurableEnvironment#setActiveProfiles(String...)}.
 	 * <p>If no profiles have explicitly been specified as active, then any
 	 * {@linkplain #getDefaultProfiles() default profiles} will automatically be activated.
@@ -89,6 +107,14 @@ public interface Environment extends PropertyResolver {
 	/**
 	 * Return the set of profiles to be active by default when no active profiles have
 	 * been set explicitly.
+	 *
+	 * <p>
+	 * 获取默认配置文件
+	 * <ul>
+	 *     <li>返回在没有显式激活 Profile 时默认激活的 Profile</li>
+	 *     <li>当没有明确指定激活 Profile 时，这些默认的 Profile 会自动激活</li>
+	 * </ul>
+	 *
 	 * @see #getActiveProfiles
 	 * @see ConfigurableEnvironment#setDefaultProfiles
 	 * @see AbstractEnvironment#DEFAULT_PROFILES_PROPERTY_NAME
@@ -109,6 +135,11 @@ public interface Environment extends PropertyResolver {
 	 * @since 5.3.28
 	 * @see Profiles#of(String...)
 	 * @see #acceptsProfiles(Profiles)
+	 *
+	 * <p>
+	 * 现代配置文件表达式匹配，判断给定的 Profile 表达式是否匹配当前激活的 Profiles
+	 * <p>
+	 * 支持复杂的布尔表达式：如 {code "p1 & p2"}、{code "(p1 & p2) | p3"} 等
 	 */
 	default boolean matchesProfiles(String... profileExpressions) {
 		return acceptsProfiles(Profiles.of(profileExpressions));
@@ -132,6 +163,11 @@ public interface Environment extends PropertyResolver {
 	 * @see #acceptsProfiles(Profiles)
 	 * @deprecated as of 5.1 in favor of {@link #acceptsProfiles(Profiles)} or
 	 * {@link #matchesProfiles(String...)}
+	 *
+	 * <p>
+	 * 传统配置文件匹配（已废弃），判断给定的 Profile 是否匹配当前激活的 Profiles
+	 * <p>
+	 * Profile 可以使用逻辑取反，如果给定的 Profile 以 '!' 开头，则当 Profile 未激活时返回 true
 	 */
 	@Deprecated
 	boolean acceptsProfiles(String... profiles);
