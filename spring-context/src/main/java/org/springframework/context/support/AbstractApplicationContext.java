@@ -580,9 +580,14 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			StartupStep contextRefresh = this.applicationStartup.start("spring.context.refresh");
 
 			// Prepare this context for refreshing.
+			// 准备刷新
+			// 1. 将 ApplicationContext 标记为活跃状态
+			// 2. 初始化 Environment 用到的 PropertySources
+			// 3. 验证所有的标记为 required 的 properties 都可以被解析到
 			prepareRefresh();
 
 			// Tell the subclass to refresh the internal bean factory.
+			// 销毁存在 BeanFactory 实例，并创建一个新的 BeanFactory 实例（包括加载 BeanDefinition）
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
 			// Prepare the bean factory for use in this context.
@@ -646,8 +651,11 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 */
 	protected void prepareRefresh() {
 		// Switch to active.
+		// 记录 ApplicationContext 的启动时间
 		this.startupDate = System.currentTimeMillis();
+		// 将 ApplicationContext 的关闭标识设置为 false，表示 ApplicationContext 未关闭
 		this.closed.set(false);
+		// 将 ApplicationContext 的激活标识设置为 true，表示 ApplicationContext 处于活跃状态
 		this.active.set(true);
 
 		if (logger.isDebugEnabled()) {
@@ -660,24 +668,30 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		}
 
 		// Initialize any placeholder property sources in the context environment.
+		// 初始化 Environment 用到的 PropertySources，例如：
+		// AbstractRefreshableWebApplicationContext 将 Servlet 容器的配置信息（servletContext、servletConfig）集成到 Spring 的 Environment 中
 		initPropertySources();
 
 		// Validate that all properties marked as required are resolvable:
 		// see ConfigurablePropertyResolver#setRequiredProperties
+		// 验证所有的标记为 required 的属性都可以解析，确保了应用启动时所有必需的配置都已正确设置
 		getEnvironment().validateRequiredProperties();
 
 		// Store pre-refresh ApplicationListeners...
 		if (this.earlyApplicationListeners == null) {
+			// 如果是第一次刷新，将当前的监听器保存为 earlyApplicationListeners
 			this.earlyApplicationListeners = new LinkedHashSet<>(this.applicationListeners);
 		}
 		else {
 			// Reset local application listeners to pre-refresh state.
+			// 如果不是第一次刷新，将监听器重置为刷新前的状态
 			this.applicationListeners.clear();
 			this.applicationListeners.addAll(this.earlyApplicationListeners);
 		}
 
 		// Allow for the collection of early ApplicationEvents,
 		// to be published once the multicaster is available...
+		// 初始化一个集合来收集早期的应用事件，这些事件将在事件多播器可用后发布
 		this.earlyApplicationEvents = new LinkedHashSet<>();
 	}
 
@@ -692,12 +706,18 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 	/**
 	 * Tell the subclass to refresh the internal bean factory.
+	 *
+	 * <p>
+	 * 获取 refresh 之后的 BeanFactory 实例
+	 *
 	 * @return the fresh BeanFactory instance
 	 * @see #refreshBeanFactory()
 	 * @see #getBeanFactory()
 	 */
 	protected ConfigurableListableBeanFactory obtainFreshBeanFactory() {
+		// 销毁存在 BeanFactory 实例，并创建一个新的 BeanFactory 实例（包括加载 BeanDefinition）
 		refreshBeanFactory();
+		// 获取刷新之后的 BeanFactory 实例
 		return getBeanFactory();
 	}
 
