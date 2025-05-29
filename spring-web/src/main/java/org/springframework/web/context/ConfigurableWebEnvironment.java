@@ -28,6 +28,9 @@ import org.springframework.lang.Nullable;
  * earliest moment that the {@link ServletContext} and (optionally) {@link ServletConfig}
  * become available.
  *
+ * <p>
+ * 继承自 ConfigurableEnvironment，专门为 Web 应用程序设计，将 Servlet 容器的配置信息集成到 Spring 的环境配置中
+ *
  * @author Chris Beams
  * @since 3.1.2
  * @see ConfigurableWebApplicationContext#getEnvironment()

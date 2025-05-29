@@ -64,6 +64,10 @@ import java.util.Map;
  * org.springframework.context.support.PropertySourcesPlaceholderConfigurer property
  * placeholder configurers}.
  *
+ * <p>
+ * 提供设置激活和默认 Profiles、操作底层 MutablePropertySources 的功能，
+ * 并允许通过父类接口 ConfigurablePropertyResolver 来设置和验证 required properties、自定义 ConversionService 等等
+ *
  * @author Chris Beams
  * @since 3.1
  * @see StandardEnvironment
@@ -78,6 +82,14 @@ public interface ConfigurableEnvironment extends Environment, ConfigurableProper
 	 * <p>Any existing active profiles will be replaced with the given arguments; call
 	 * with zero arguments to clear the current set of active profiles. Use
 	 * {@link #addActiveProfile} to add a profile while preserving the existing set.
+	 *
+	 * <p>
+	 * Profile 管理 - 配置激活的 Profiles
+	 * <ul>
+	 *     <li>指定当前 Environment 激活的 Profiles 集合，决定哪些 BeanDefinition 应该注册到容器中</li>
+	 * 	   <li>这个方法会替换现有所有激活的 Profiles，传入空参数可清除当前激活的 Profiles</li>
+	 * </ul>
+	 *
 	 * @throws IllegalArgumentException if any profile is null, empty or whitespace-only
 	 * @see #addActiveProfile
 	 * @see #setDefaultProfiles
@@ -89,6 +101,13 @@ public interface ConfigurableEnvironment extends Environment, ConfigurableProper
 	/**
 	 * Add a profile to the current set of active profiles.
 	 * @throws IllegalArgumentException if the profile is null, empty or whitespace-only
+	 *
+	 * <p>
+	 * Profile 管理 - 添加激活的 Profile
+	 * <p>
+	 * 向当前激活的 Profiles 中添加一个配置文件，与 {@link ConfigurableEnvironment#setActiveProfiles} 不同，
+	 * 这个方法会保留现有激活的 Profile
+	 *
 	 * @see #setActiveProfiles
 	 */
 	void addActiveProfile(String profile);
@@ -98,6 +117,13 @@ public interface ConfigurableEnvironment extends Environment, ConfigurableProper
 	 * are explicitly made active through {@link #setActiveProfiles}.
 	 * @throws IllegalArgumentException if any profile is null, empty or whitespace-only
 	 * @see AbstractEnvironment#DEFAULT_PROFILES_PROPERTY_NAME
+	 *
+	 * <p>
+	 * Profile 管理 - 配置默认的 Profiles
+	 * <ul>
+	 *     <li>指定在没有显式激活 Profiles 时默认激活的 Profiles</li>
+	 *     <li>当没有通过 {@link ConfigurableEnvironment#setActiveProfiles} 显式激活 Profiles 时，这些默认 Profiles 会自动激活</li>
+	 * </ul>
 	 */
 	void setDefaultProfiles(String... profiles);
 
@@ -114,6 +140,17 @@ public interface ConfigurableEnvironment extends Environment, ConfigurableProper
 	 * certain user-defined property sources have search precedence over default property
 	 * sources such as the set of system properties or the set of system environment
 	 * variables.
+	 *
+	 * <p>
+	 * PropertySources 管理 - 获取 MutablePropertySources，允许配置在 resolve property 时应该搜索的 PropertySource 集合，
+	 * 并提供细粒度的 PropertySources 排序控制，包括：
+	 * <ul>
+	 *     <li>{@link MutablePropertySources#addFirst}：添加到最高优先级</li>
+	 *     <li>{@link MutablePropertySources#addLast}：添加到最低优先级</li>
+	 *     <li>{@link MutablePropertySources#addBefore}：在指定 PropertySource 之前添加</li>
+	 *     <li>{@link MutablePropertySources#addAfter}：在指定 PropertySource 之后添加</li>
+	 * </ul>
+	 *
 	 * @see AbstractEnvironment#customizePropertySources
 	 */
 	MutablePropertySources getPropertySources();
@@ -124,6 +161,13 @@ public interface ConfigurableEnvironment extends Environment, ConfigurableProper
 	 * properties map as a default {@link PropertySource} to be searched. Therefore, it is
 	 * recommended that this method not be used directly unless bypassing other property
 	 * sources is expressly intended.
+	 *
+	 * <p>
+	 * PropertySources 管理 - 获取 System Properties，例如 java.class.path、user.dir
+	 * <p>
+	 * 注意：大多数 Environment 实现会将 System Properties 作为默认 PropertySource 包含在内
+	 * 因此，除非明确要绕过其他 PropertySource，建议不要直接使用此方法
+	 *
 	 */
 	Map<String, Object> getSystemProperties();
 
@@ -133,6 +177,13 @@ public interface ConfigurableEnvironment extends Environment, ConfigurableProper
 	 * environment map as a default {@link PropertySource} to be searched. Therefore, it
 	 * is recommended that this method not be used directly unless bypassing other
 	 * property sources is expressly intended.
+	 *
+	 * <p>
+	 * PropertySources 管理 - 获取系统环境变量
+	 * <p>
+	 * 注意：大多数 Environment 实现会将 System Environment 作为默认 PropertySource 包含在内
+	 * 因此，除非明确要绕过其他 PropertySource，建议不要直接使用此方法
+	 *
 	 */
 	Map<String, Object> getSystemEnvironment();
 
@@ -149,7 +200,18 @@ public interface ConfigurableEnvironment extends Environment, ConfigurableProper
 	 * <p>The parent environment remains unmodified in any case. Note that any changes to
 	 * the parent environment occurring after the call to {@code merge} will not be
 	 * reflected in the child. Therefore, care should be taken to configure parent
-	 * property sources and profile information prior to calling {@code merge}.
+	 * property sources and profile information prior to calling {@code merge}
+	 *
+	 * <p>
+	 * 合并 Parent Environment
+	 * <p>
+	 * 将给定的 Parent Environment 的 Active Profiles、Default Profiles 和 PropertySources 追加到当前 Environment 中
+	 * <ul>
+	 *     <li>PropertySources 合并规则：对于相同名称的 PropertySource，当前 Environment 中的会保留，Parent Environment 中的会被丢弃</li>
+	 *     <li>Profiles 合并规则：Active Profiles、Default Profiles 合并后会进行去重</li>
+	 *     <li>合并之后任何对 Parent Environment 的修改都不会影响当前 Environment。因此，需要在合并之前配置好 Parent Environment</li>
+	 * </ul>
+	 *
 	 * @param parent the environment to merge with
 	 * @since 3.1.2
 	 * @see org.springframework.context.support.AbstractApplicationContext#setParent
