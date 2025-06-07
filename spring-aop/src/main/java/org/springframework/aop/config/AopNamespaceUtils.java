@@ -71,23 +71,36 @@ public abstract class AopNamespaceUtils {
 		registerComponentIfNecessary(beanDefinition, parserContext);
 	}
 
+	/**
+	 * 注册 AspectJAnnotationAutoProxyCreator
+	 */
 	public static void registerAspectJAnnotationAutoProxyCreatorIfNecessary(
 			ParserContext parserContext, Element sourceElement) {
 
+		// 将 AnnotationAwareAspectJAutoProxyCreator 的 BeanDefinition 注册到 BeanDefinitionRegistry 中
 		BeanDefinition beanDefinition = AopConfigUtils.registerAspectJAnnotationAutoProxyCreatorIfNecessary(
 				parserContext.getRegistry(), parserContext.extractSource(sourceElement));
+
+		// 处理 XML 中 proxy-target-class 或 expose-proxy 属性
 		useClassProxyingIfNecessary(parserContext.getRegistry(), sourceElement);
+
+		// 如果 beanDefinition 不为 null，则将其注册为组件
 		registerComponentIfNecessary(beanDefinition, parserContext);
 	}
 
 	private static void useClassProxyingIfNecessary(BeanDefinitionRegistry registry, @Nullable Element sourceElement) {
 		if (sourceElement != null) {
+			// 检查 XML 元素中是否设置 proxy-target-class 属性
 			boolean proxyTargetClass = Boolean.parseBoolean(sourceElement.getAttribute(PROXY_TARGET_CLASS_ATTRIBUTE));
+			// 如果 proxy-target-class 为 true，强制使用 CGLIB 基于类的代理（而非基于接口的 JDK 动态代理）
 			if (proxyTargetClass) {
 				AopConfigUtils.forceAutoProxyCreatorToUseClassProxying(registry);
 			}
+
+			// 检查 XML 元素中是否设置 expose-proxy 属性
 			boolean exposeProxy = Boolean.parseBoolean(sourceElement.getAttribute(EXPOSE_PROXY_ATTRIBUTE));
 			if (exposeProxy) {
+				// 如果 expose-proxy 为 true，则启用当前代理的暴露功能，使得可以通过 AopContext 访问当前代理
 				AopConfigUtils.forceAutoProxyCreatorToExposeProxy(registry);
 			}
 		}
