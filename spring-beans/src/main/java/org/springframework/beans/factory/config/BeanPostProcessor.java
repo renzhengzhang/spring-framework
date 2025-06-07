@@ -17,6 +17,7 @@
 package org.springframework.beans.factory.config;
 
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory;
 import org.springframework.lang.Nullable;
 
 /**
@@ -47,6 +48,9 @@ import org.springframework.lang.Nullable;
  * {@link org.springframework.core.annotation.Order @Order} annotation is not
  * taken into account for {@code BeanPostProcessor} beans.
  *
+ * <p>
+ * BeanPostProcessor 允许开发者在 Spring 容器完成 Bean 的实例化、依赖注入后，在调用显式初始化方法之前和之后，对 Bean 实例进行自定义修改。
+ *
  * @author Juergen Hoeller
  * @author Sam Brannen
  * @since 10.10.2003
@@ -63,6 +67,13 @@ public interface BeanPostProcessor {
 	 * or a custom init-method). The bean will already be populated with property values.
 	 * The returned bean instance may be a wrapper around the original.
 	 * <p>The default implementation returns the given {@code bean} as-is.
+	 *
+	 * <p>
+	 * {@link AbstractAutowireCapableBeanFactory} 会在 Bean 实例化、属性注入之后，执行 Bean 的初始化之前，
+	 * 例如 InitializingBean 的 afterPropertiesSet 方法或自定义的 init-method 方法，调用当前方法，用来对 Bean 实例进行自定义修改，
+	 * 也可以返回一个原始 Bean 实例的包装实例。
+	 *
+	 *
 	 * @param bean the new bean instance
 	 * @param beanName the name of the bean
 	 * @return the bean instance to use, either the original or a wrapped one;
@@ -88,6 +99,10 @@ public interface BeanPostProcessor {
 	 * {@link InstantiationAwareBeanPostProcessor#postProcessBeforeInstantiation} method,
 	 * in contrast to all other {@code BeanPostProcessor} callbacks.
 	 * <p>The default implementation returns the given {@code bean} as-is.
+	 *
+	 * <p>
+	 * {@link AbstractAutowireCapableBeanFactory} 会在 Bean 实例化、属性注入之后，执行 Bean 的初始化之后，调用此方法。
+	 *
 	 * @param bean the new bean instance
 	 * @param beanName the name of the bean
 	 * @return the bean instance to use, either the original or a wrapped one;

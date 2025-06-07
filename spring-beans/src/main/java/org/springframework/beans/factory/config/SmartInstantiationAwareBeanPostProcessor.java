@@ -30,6 +30,10 @@ import org.springframework.lang.Nullable;
  * post-processors should simply implement the plain {@link BeanPostProcessor}
  * interface.
  *
+ * <p>
+ * SmartInstantiationAwareBeanPostProcessor 是 InstantiationAwareBeanPostProcessor 的扩展接口，
+ * 提供了更精细的控制能力，特别是在预测 Bean 类型、选择构造函数和处理早期 Bean 引用方面。
+ *
  * @author Juergen Hoeller
  * @since 2.0.3
  */
@@ -41,6 +45,13 @@ public interface SmartInstantiationAwareBeanPostProcessor extends InstantiationA
 	 * <p>The default implementation returns {@code null}.
 	 * Specific implementations should try to predict the bean type as
 	 * far as known/cached already, without extra processing steps.
+	 *
+	 * <p>
+	 * 预测由 {@link #postProcessBeforeInstantiation} 返回的 Bean 的最终类型。
+	 * 默认返回 null。
+	 * 实现时应尽可能基于已有信息快速预测类型，避免额外处理开销。
+	 * 用于在 Spring 容器中提前确定代理或其他包装对象的实际类型。
+	 *
 	 * @param beanClass the raw class of the bean
 	 * @param beanName the name of the bean
 	 * @return the type of the bean, or {@code null} if not predictable
@@ -57,6 +68,12 @@ public interface SmartInstantiationAwareBeanPostProcessor extends InstantiationA
 	 * <p>The default implementation returns the given bean class as-is.
 	 * Specific implementations should fully evaluate their processing steps
 	 * in order to create/initialize a potential proxy class upfront.
+	 *
+	 * <p>
+	 * 更准确地确定由 {@link #postProcessBeforeInstantiation} 返回的 Bean 类型。
+	 * 默认返回原始 beanClass。
+	 * 相较于 predictBeanType，此方法允许实现者完整评估其处理逻辑以生成/初始化代理类。
+	 *
 	 * @param beanClass the raw class of the bean
 	 * @param beanName the name of the bean
 	 * @return the type of the bean (never {@code null})
@@ -70,6 +87,12 @@ public interface SmartInstantiationAwareBeanPostProcessor extends InstantiationA
 	/**
 	 * Determine the candidate constructors to use for the given bean.
 	 * <p>The default implementation returns {@code null}.
+	 *
+	 * <p>
+	 * 确定用于实例化 Bean 的候选构造函数。
+	 * 默认返回 null，表示使用默认的构造函数解析机制。
+	 * 可用于自定义构造函数注入逻辑，例如根据注解或配置筛选构造函数。
+	 *
 	 * @param beanClass the raw class of the bean (never {@code null})
 	 * @param beanName the name of the bean
 	 * @return the candidate constructors, or {@code null} if none specified
