@@ -177,12 +177,18 @@ public abstract class WebApplicationContextUtils {
 	/**
 	 * Register web-specific scopes ("request", "session", "globalSession", "application")
 	 * with the given BeanFactory, as used by the WebApplicationContext.
+	 *
+	 * <p>
+	 * 向 BeanFactory 中注册 Web 相关的 Scope，包括 request、session、application，
+	 * 并向 BeanFactory 中注册 ServletRequest、ServletResponse、HttpSession、WebRequest 作为 ResolvableDependency
+	 *
 	 * @param beanFactory the BeanFactory to configure
 	 * @param sc the ServletContext that we're running within
 	 */
 	public static void registerWebApplicationScopes(ConfigurableListableBeanFactory beanFactory,
-			@Nullable ServletContext sc) {
+													@Nullable ServletContext sc) {
 
+		// 注册 Web 相关的 Scope，包括 request、session、application
 		beanFactory.registerScope(WebApplicationContext.SCOPE_REQUEST, new RequestScope());
 		beanFactory.registerScope(WebApplicationContext.SCOPE_SESSION, new SessionScope());
 		if (sc != null) {
@@ -192,6 +198,7 @@ public abstract class WebApplicationContextUtils {
 			sc.setAttribute(ServletContextScope.class.getName(), appScope);
 		}
 
+		// 将 ServletRequest、ServletResponse、HttpSession、WebRequest 注册为 ResolvableDependency
 		beanFactory.registerResolvableDependency(ServletRequest.class, new RequestObjectFactory());
 		beanFactory.registerResolvableDependency(ServletResponse.class, new ResponseObjectFactory());
 		beanFactory.registerResolvableDependency(HttpSession.class, new SessionObjectFactory());
@@ -219,7 +226,7 @@ public abstract class WebApplicationContextUtils {
 	 * @param servletConfig the ServletConfig
 	 */
 	public static void registerEnvironmentBeans(ConfigurableListableBeanFactory bf,
-			@Nullable ServletContext servletContext, @Nullable ServletConfig servletConfig) {
+												@Nullable ServletContext servletContext, @Nullable ServletConfig servletConfig) {
 
 		if (servletContext != null && !bf.containsBean(WebApplicationContext.SERVLET_CONTEXT_BEAN_NAME)) {
 			bf.registerSingleton(WebApplicationContext.SERVLET_CONTEXT_BEAN_NAME, servletContext);
@@ -292,7 +299,7 @@ public abstract class WebApplicationContextUtils {
 	 * @see org.springframework.core.env.ConfigurableEnvironment#getPropertySources()
 	 */
 	public static void initServletPropertySources(MutablePropertySources sources,
-			@Nullable ServletContext servletContext, @Nullable ServletConfig servletConfig) {
+												  @Nullable ServletContext servletContext, @Nullable ServletConfig servletConfig) {
 
 		Assert.notNull(sources, "'propertySources' must not be null");
 		String name = StandardServletEnvironment.SERVLET_CONTEXT_PROPERTY_SOURCE_NAME;
@@ -398,7 +405,7 @@ public abstract class WebApplicationContextUtils {
 
 	/**
 	 * Inner class to avoid hard-coded JSF dependency.
- 	 */
+	 */
 	private static class FacesDependencyRegistrar {
 
 		public static void registerFacesDependencies(ConfigurableListableBeanFactory beanFactory) {

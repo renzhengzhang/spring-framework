@@ -869,7 +869,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	 * @return whether the bean should be considered as autowire candidate
 	 */
 	protected boolean isAutowireCandidate(String beanName, RootBeanDefinition mbd,
-			DependencyDescriptor descriptor, AutowireCandidateResolver resolver) {
+										  DependencyDescriptor descriptor, AutowireCandidateResolver resolver) {
 
 		String bdName = BeanFactoryUtils.transformedBeanName(beanName);
 		resolveBeanClass(mbd, bdName);
@@ -949,6 +949,10 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		return super.obtainInstanceFromSupplier(supplier, beanName, mbd);
 	}
 
+
+	/**
+	 * 实例化所有的非懒加载的 Singleton Bean
+	 */
 	@Override
 	public void preInstantiateSingletons() throws BeansException {
 		if (logger.isTraceEnabled()) {
@@ -957,18 +961,33 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 		// Iterate over a copy to allow for init methods which in turn register new bean definitions.
 		// While this may not be part of the regular factory bootstrap, it does otherwise work fine.
+		// 创建 Bean 定义名称的副本，而不是直接使用原集合
+		// 在 Bean 初始化过程中，某些初始化方法可能会注册新的 BeanDefinition，这会修改原集合，使用副本可以避免 ConcurrentModificationException
 		List<String> beanNames = new ArrayList<>(this.beanDefinitionNames);
 
 		// Trigger initialization of all non-lazy singleton beans...
+		// 第一轮循环：实例化符合条件的 Singleton Bean
 		for (String beanName : beanNames) {
 			RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);
+
+			// 只有同时满足以下条件的 Bean 才会被实例化：
+			// 1. 非抽象 BeanDefinition；
+			// 2. Singleton Bean
+			// 3. non-lazy-init Bean
 			if (!bd.isAbstract() && bd.isSingleton() && !bd.isLazyInit()) {
+
+				// 处理 FactoryBean 逻辑
 				if (isFactoryBean(beanName)) {
+					// 通过 getBean(FACTORY_BEAN_PREFIX + beanName) 获取 FactoryBean 本身
 					Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);
+					// 检查是否需要立即初始化产品
+					// FactoryBean 实现了 SmartFactoryBean 接口且 isEagerInit() 返回 true，则立即创建产品对象
 					if (bean instanceof SmartFactoryBean<?> smartFactoryBean && smartFactoryBean.isEagerInit()) {
 						getBean(beanName);
 					}
 				}
+
+				// 普通 Bean 处理逻辑
 				else {
 					getBean(beanName);
 				}
@@ -976,6 +995,12 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		}
 
 		// Trigger post-initialization callback for all applicable beans...
+		// 第二轮循环：触发 SmartInitializingSingleton.afterSingletonsInstantiated
+		// 在所有单例 Bean 实例化完成后统一执行，确保此时容器中所有非懒加载的单例 Bean 都已经完全初始化
+		// 可以用于：
+		// 1. 需要在所有 Bean 都准备就绪后执行某些操作
+		// 2. 启动后台任务或定时任务
+		// 3. 执行系统预热操作
 		for (String beanName : beanNames) {
 			Object singletonInstance = getSingleton(beanName);
 			if (singletonInstance instanceof SmartInitializingSingleton smartSingleton) {
@@ -1049,7 +1074,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 					else {  // alias pointing to non-existing bean definition
 						throw new BeanDefinitionStoreException(beanDefinition.getResourceDescription(), beanName,
 								"Cannot register bean definition for bean '" + beanName +
-								"' since there is already an alias for bean '" + aliasedName + "' bound.");
+										"' since there is already an alias for bean '" + aliasedName + "' bound.");
 					}
 				}
 				else {
@@ -1328,7 +1353,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	@Override
 	@Nullable
 	public Object resolveDependency(DependencyDescriptor descriptor, @Nullable String requestingBeanName,
-			@Nullable Set<String> autowiredBeanNames, @Nullable TypeConverter typeConverter) throws BeansException {
+									@Nullable Set<String> autowiredBeanNames, @Nullable TypeConverter typeConverter) throws BeansException {
 
 		descriptor.initParameterNameDiscovery(getParameterNameDiscoverer());
 		if (Optional.class == descriptor.getDependencyType()) {
@@ -1353,7 +1378,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 	@Nullable
 	public Object doResolveDependency(DependencyDescriptor descriptor, @Nullable String beanName,
-			@Nullable Set<String> autowiredBeanNames, @Nullable TypeConverter typeConverter) throws BeansException {
+									  @Nullable Set<String> autowiredBeanNames, @Nullable TypeConverter typeConverter) throws BeansException {
 
 		InjectionPoint previousInjectionPoint = ConstructorResolver.setCurrentInjectionPoint(descriptor);
 		try {
@@ -1460,7 +1485,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 	@Nullable
 	private Object resolveMultipleBeans(DependencyDescriptor descriptor, @Nullable String beanName,
-			@Nullable Set<String> autowiredBeanNames, @Nullable TypeConverter typeConverter) {
+										@Nullable Set<String> autowiredBeanNames, @Nullable TypeConverter typeConverter) {
 
 		Class<?> type = descriptor.getDependencyType();
 
@@ -1517,7 +1542,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 	@Nullable
 	private Object resolveMultipleBeansFallback(DependencyDescriptor descriptor, @Nullable String beanName,
-			@Nullable Set<String> autowiredBeanNames, @Nullable TypeConverter typeConverter) {
+												@Nullable Set<String> autowiredBeanNames, @Nullable TypeConverter typeConverter) {
 
 		Class<?> type = descriptor.getDependencyType();
 
@@ -1532,7 +1557,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 	@Nullable
 	private Object resolveMultipleBeanCollection(DependencyDescriptor descriptor, @Nullable String beanName,
-			@Nullable Set<String> autowiredBeanNames, @Nullable TypeConverter typeConverter) {
+												 @Nullable Set<String> autowiredBeanNames, @Nullable TypeConverter typeConverter) {
 
 		Class<?> elementType = descriptor.getResolvableType().asCollection().resolveGeneric();
 		if (elementType == null) {
@@ -1559,7 +1584,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 	@Nullable
 	private Object resolveMultipleBeanMap(DependencyDescriptor descriptor, @Nullable String beanName,
-			@Nullable Set<String> autowiredBeanNames, @Nullable TypeConverter typeConverter) {
+										  @Nullable Set<String> autowiredBeanNames, @Nullable TypeConverter typeConverter) {
 
 		ResolvableType mapType = descriptor.getResolvableType().asMap();
 		Class<?> keyType = mapType.resolveGeneric(0);
@@ -1681,7 +1706,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	 * type, preventing early bean initialization ahead of primary candidate selection.
 	 */
 	private void addCandidateEntry(Map<String, Object> candidates, String candidateName,
-			DependencyDescriptor descriptor, Class<?> requiredType) {
+								   DependencyDescriptor descriptor, Class<?> requiredType) {
 
 		if (descriptor instanceof MultiElementDescriptor) {
 			Object beanInstance = descriptor.resolveCandidate(candidateName, requiredType, this);
@@ -1790,7 +1815,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 						if (candidatePriority.equals(highestPriority)) {
 							throw new NoUniqueBeanDefinitionException(requiredType, candidates.size(),
 									"Multiple beans found with the same priority ('" + highestPriority +
-									"') among candidates: " + candidates.keySet());
+											"') among candidates: " + candidates.keySet());
 						}
 						else if (candidatePriority < highestPriority) {
 							highestPriorityBeanName = candidateBeanName;
@@ -1875,7 +1900,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 		throw new NoSuchBeanDefinitionException(resolvableType,
 				"expected at least 1 bean which qualifies as autowire candidate. " +
-				"Dependency annotations: " + ObjectUtils.nullSafeToString(descriptor.getAnnotations()));
+						"Dependency annotations: " + ObjectUtils.nullSafeToString(descriptor.getAnnotations()));
 	}
 
 	/**

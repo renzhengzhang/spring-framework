@@ -974,6 +974,11 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		return result;
 	}
 
+	/**
+	 * 注册 BeanPostProcessor
+	 * <p>
+	 * 如果已经存在，则移除已有的，再添加到末尾
+	 */
 	@Override
 	public void addBeanPostProcessor(BeanPostProcessor beanPostProcessor) {
 		Assert.notNull(beanPostProcessor, "BeanPostProcessor must not be null");
@@ -988,6 +993,12 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	/**
 	 * Add new BeanPostProcessors that will get applied to beans created
 	 * by this factory. To be invoked during factory configuration.
+	 *
+	 * <p>
+	 * 注册 BeanPostProcessors
+	 * <p>
+	 * 如果已经存在，则移除已有的，再添加到末尾
+	 *
 	 * @since 5.3
 	 * @see #addBeanPostProcessor
 	 */

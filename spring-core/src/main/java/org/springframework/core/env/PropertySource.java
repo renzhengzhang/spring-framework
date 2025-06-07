@@ -204,6 +204,12 @@ public abstract class PropertySource<T> {
 	 * {@code ApplicationContext}.  In such cases, a stub should be used to hold the
 	 * intended default position/order of the property source, then be replaced
 	 * during context refresh.
+	 *
+	 * <p>
+	 * StubPropertySource 用于当实际使用的 PropertySource 无法在应用上下文创建时提前初始化的场景。
+	 * 例如，基于 ServletContext 的 PropertySource 必须等待 ServletContext 对象可用时才能使用。
+	 * 这种情况下，应该使用 StubPropertySource 来占位，保持 PropertySource 的优先级顺序，然后在 ApplicationContext refresh 的时候替换
+	 *
 	 * @see org.springframework.context.support.AbstractApplicationContext#initPropertySources()
 	 * @see org.springframework.web.context.support.StandardServletEnvironment
 	 * @see org.springframework.web.context.support.ServletContextPropertySource
@@ -216,6 +222,9 @@ public abstract class PropertySource<T> {
 
 		/**
 		 * Always returns {@code null}.
+		 *
+		 * <p>
+		 * 获取 Property 时始终返回 null
 		 */
 		@Override
 		@Nullable

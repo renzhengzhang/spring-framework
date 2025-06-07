@@ -23,7 +23,10 @@ import java.lang.instrument.ClassFileTransformer;
  * {@link ClassFileTransformer ClassFileTransformers} to a {@link ClassLoader}.
  *
  * <p>Implementations may operate on the current context {@code ClassLoader}
- * or expose their own instrumentable {@code ClassLoader}.
+ * or expose their own instrumental {@code ClassLoader}.
+ *
+ * <p>
+ * LoadTimeWeaver 定义了加载时织入（Load-Time Weaving，LTW）的契约，作为 Spring AOP 和 AspectJ 集成的核心组件之一。
  *
  * @author Rod Johnson
  * @author Costin Leau
@@ -35,6 +38,10 @@ public interface LoadTimeWeaver {
 	/**
 	 * Add a {@code ClassFileTransformer} to be applied by this
 	 * {@code LoadTimeWeaver}.
+	 *
+	 * <p>
+	 * 添加一个 ClassFileTransformer 到当前的 LoadTimeWeaver，ClassFileTransformer 会在类加载时对字节码进行修改
+	 *
 	 * @param transformer the {@code ClassFileTransformer} to add
 	 */
 	void addTransformer(ClassFileTransformer transformer);
@@ -47,6 +54,10 @@ public interface LoadTimeWeaver {
 	 * created by this {@link LoadTimeWeaver} instance.
 	 * @return the {@code ClassLoader} which will expose
 	 * instrumented classes according to the registered transformers
+	 *
+	 * <p>
+	 * 返回一个支持通过以 AspectJ 风格的加载时织入进行类增强的 ClassLoader，
+	 * 可能是当前的 ClassLoader，也可能是由 LoadTimeWeaver 实例创建的新 ClassLoader
 	 */
 	ClassLoader getInstrumentableClassLoader();
 
@@ -57,6 +68,10 @@ public interface LoadTimeWeaver {
 	 * returned from an invocation of {@link #getInstrumentableClassLoader()}.
 	 * @return a temporary throwaway {@code ClassLoader}; should return
 	 * a new instance for each call, with no existing state
+	 *
+	 * <p>
+	 * 返回一个临时的、一次性的 ClassLoader，用于加载和检查类而不影响 parent ClassLoader
+	 * 每次调用都应该返回一个新的实例，不包含任何现有状态
 	 */
 	ClassLoader getThrowawayClassLoader();
 

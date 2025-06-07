@@ -42,6 +42,15 @@ public interface ConfigurableWebEnvironment extends ConfigurableEnvironment {
 	 * org.springframework.core.env.PropertySource.StubPropertySource stub property source}
 	 * instances acting as placeholders with real servlet context/config property sources
 	 * using the given parameters.
+	 *
+	 * <p>
+	 * 将作为临时占位的 StubPropertySource 实例替换为真实的 Servlet 容器 PropertySource
+	 * <p>
+	 * 在 Web 应用程序启动过程中：<br/>
+	 * 初始阶段：Spring 环境需要建立 PropertySource 的层次结构，但此时 ServletContext 和 ServletConfig 可能还没有准备好<br/>
+	 * 占位阶段：Spring 会先创建 StubPropertySource 作为占位，预留好位置<br/>
+	 * 替换阶段：当 ServletContext 和 ServletConfig 可用后，用真正的 PropertySource 替换这些占位符<br/>
+	 *
 	 * @param servletContext the {@link ServletContext} (may not be {@code null})
 	 * @param servletConfig the {@link ServletConfig} ({@code null} if not available)
 	 * @see org.springframework.web.context.support.WebApplicationContextUtils#initServletPropertySources(

@@ -70,10 +70,13 @@ public class OrderComparator implements Comparator<Object> {
 
 	@Override
 	public int compare(@Nullable Object o1, @Nullable Object o2) {
+		// 实现了 PriorityOrdered 的对象的自然序比较小
+		// 再通过 Order 接口获取
 		return doCompare(o1, o2, null);
 	}
 
 	private int doCompare(@Nullable Object o1, @Nullable Object o2, @Nullable OrderSourceProvider sourceProvider) {
+		// 实现了 PriorityOrdered 的对象的自然序比较小
 		boolean p1 = (o1 instanceof PriorityOrdered);
 		boolean p2 = (o2 instanceof PriorityOrdered);
 		if (p1 && !p2) {
@@ -83,6 +86,7 @@ public class OrderComparator implements Comparator<Object> {
 			return 1;
 		}
 
+		// 优先通过 sourceProvider 获取 order，没找到则通过 Order 接口获取，还没找到则返回最低优先级
 		int i1 = getOrder(o1, sourceProvider);
 		int i2 = getOrder(o2, sourceProvider);
 		return Integer.compare(i1, i2);
@@ -97,6 +101,8 @@ public class OrderComparator implements Comparator<Object> {
 	 */
 	private int getOrder(@Nullable Object obj, @Nullable OrderSourceProvider sourceProvider) {
 		Integer order = null;
+
+		// sourceProvider 不为空，则优先使用 sourceProvider 中获取到的 order
 		if (obj != null && sourceProvider != null) {
 			Object orderSource = sourceProvider.getOrderSource(obj);
 			if (orderSource != null) {
@@ -113,6 +119,8 @@ public class OrderComparator implements Comparator<Object> {
 				}
 			}
 		}
+
+		// 没有找到 order，则通过 Order 接口获取（没实现返回最低优先级）
 		return (order != null ? order : getOrder(obj));
 	}
 
@@ -120,6 +128,10 @@ public class OrderComparator implements Comparator<Object> {
 	 * Determine the order value for the given object.
 	 * <p>The default implementation checks against the {@link Ordered} interface
 	 * through delegating to {@link #findOrder}. Can be overridden in subclasses.
+	 *
+	 * <p>
+	 * 如果给定对象实现了 Ordered 接口，则返回 Ordered.getOrder()，否则返回 Ordered.LOWEST_PRECEDENCE（最大自然序，排在最后）
+	 *
 	 * @param obj the object to check
 	 * @return the order value, or {@code Ordered.LOWEST_PRECEDENCE} as fallback
 	 */
@@ -137,6 +149,10 @@ public class OrderComparator implements Comparator<Object> {
 	 * Find an order value indicated by the given object.
 	 * <p>The default implementation checks against the {@link Ordered} interface.
 	 * Can be overridden in subclasses.
+	 *
+	 * <p>
+	 * 若给定对象实现了 Ordered 接口，则返回 Ordered.getOrder()，否则返回 null
+	 *
 	 * @param obj the object to check
 	 * @return the order value, or {@code null} if none found
 	 */
