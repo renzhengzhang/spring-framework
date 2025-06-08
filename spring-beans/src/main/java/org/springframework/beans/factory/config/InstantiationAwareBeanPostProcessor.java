@@ -65,17 +65,40 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 	 * {@link SmartInstantiationAwareBeanPostProcessor} interface in order
 	 * to predict the type of the bean object that they are going to return here.
 	 * <p>The default implementation returns {@code null}.
+	 *
+	 *
+	 * <p>
+	 * 用于在 Spring 容器实例化 Bean 之前进行干预。它提供了一个机会让开发者可以完全自定义 Bean 的创建过程，甚至跳过 Spring 默认的实例化逻辑。
+	 *
+	 * <p>
+	 * <b>执行时机：</b>
+	 * <p>
+	 * 在 Spring 准备创建 Bean 实例之前调用，此时 Bean 还未被实例化，也没有开始属性注入或初始化。
+	 *
+	 * <p>
+	 * <b>短路行为：</b>
+	 * <ul>
+	 *     <li>返回非空对象，后续 InstantiationAwareBeanPostProcessor#postProcessBeforeInstantiation 不再执行；</li>
+	 *     <li>返回非空对象，则会跳过默认的 Bean 实例化步骤，以及其余生命周期步骤（如属性注入、初始化方法等，
+	 *     	   后续仅执行 BeanPostProcessor 的 postProcessAfterInitialization 方法。</li>
+	 * </ul>
+	 *
+	 * <p>
+	 * <b>默认逻辑：</b>
+	 * <p>
+	 * 返回 null，不干扰默认的 Bean 创建流程。
+	 *
+	 * <p>
+	 * <b>常见用途：</b>
+	 * <ul>
+	 *     <li>创建 AOP 代理对象，例如 Spring AOP 就在此阶段生成代理；</li>
+	 *     <li>替换某些特定类型的 Bean 实现，实现更灵活的对象管理策略；</li>
+	 * </ul>
+	 *
 	 * @param beanClass the class of the bean to be instantiated
 	 * @param beanName the name of the bean
 	 * @return the bean object to expose instead of a default instance of the target bean,
 	 * or {@code null} to proceed with default instantiation
-	 *
-	 * <p>
-	 * 这个方法会在目标 Bean 被实例化之前被调用。它可以返回一个代理对象来代替默认的 Bean 实例化过程，从而替代默认的 Bean 创建过程。
-	 * 如果此方法返回了一个非空的对象，则会跳过默认的 Bean 实例化步骤，并且后续仅会执行 postProcessAfterInitialization 方法。
-	 *
-	 * <p>
-	 * 适用于需要完全控制 Bean 创建的情况，例如创建具有特殊 TargetSource 的代理对象（如池化对象、延迟初始化对象等）
 	 *
 	 * @throws org.springframework.beans.BeansException in case of errors
 	 * @see #postProcessAfterInstantiation
