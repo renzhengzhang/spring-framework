@@ -69,10 +69,35 @@ public interface BeanPostProcessor {
 	 * <p>The default implementation returns the given {@code bean} as-is.
 	 *
 	 * <p>
+	 * 执行时机：
+	 * <p>
 	 * {@link AbstractAutowireCapableBeanFactory} 会在 Bean 实例化、属性注入之后，执行 Bean 的初始化之前，
-	 * 例如 InitializingBean 的 afterPropertiesSet 方法或自定义的 init-method 方法，调用当前方法，用来对 Bean 实例进行自定义修改，
-	 * 也可以返回一个原始 Bean 实例的包装实例。
+	 * 例如 InitializingBean 的 afterPropertiesSet 方法或自定义的 init-method 方法，调用当前方法。
 	 *
+	 * <p>
+	 * 功能：
+	 * <ul>
+	 *     <li>用来对 Bean 实例进行自定义修改，也可以返回一个原始 Bean 实例的包装实例；</li>
+	 * 	   <li>允许开发者对 Bean 进行额外的处理，例如设置某些默认值、校验 Bean 状态或为 Bean 创建代理对象。</li>
+	 * </ul>
+	 *
+	 * <p>
+	 * 短路行为：
+	 * <p>
+	 * 如果当前方法返回了 null，后续的 BeanPostProcessor 将不会被调用。
+	 *
+	 * <p>
+	 * 默认实现：
+	 * <p>
+	 * 直接返回原始 Bean，不做任何修改。
+	 *
+	 * <p>
+	 * 应用场景：
+	 * <ul>
+	 *     <li>自动装配逻辑增强：可以在 Bean 初始化前注入额外依赖或配置；</li>
+	 *     <li>标记接口检查：根据特定接口或注解对 Bean 进行处理；</li>
+	 *     <li>代理创建：虽然通常在 postProcessAfterInitialization 中创建 AOP 代理，但也可以在此阶段进行轻量级包装。</li>
+	 * </ul>
 	 *
 	 * @param bean the new bean instance
 	 * @param beanName the name of the bean
@@ -101,7 +126,37 @@ public interface BeanPostProcessor {
 	 * <p>The default implementation returns the given {@code bean} as-is.
 	 *
 	 * <p>
+	 * 执行时机：
+	 * <p>
 	 * {@link AbstractAutowireCapableBeanFactory} 会在 Bean 实例化、属性注入之后，执行 Bean 的初始化之后，调用此方法。
+	 *
+	 * <p>
+	 * 常见用途：
+	 * <p>
+	 * 允许开发者对 Bean 进行额外的处理，例如为其创建代理对象（如 AOP 代理），以实现更复杂的功能。
+	 * 如果需要区分处理的是 FactoryBean 本身还是其生成的对象，可以通过 {@code bean instanceof FactoryBean} 判断。
+	 *
+	 * <p>
+	 * 短路行为：
+	 * <p>
+	 * 如果当前方法返回了 null，后续的 BeanPostProcessor 将不会被调用。
+	 * <p>
+	 * 如果某个 InstantiationAwareBeanPostProcessor 的 postProcessBeforeInstantiation 方法返回了一个非空 Bean 实例，
+	 * 则此方法仍然会在该短路行为后被调用。
+	 *
+	 * <p>
+	 * 默认实现：
+	 * <p>
+	 * 默认情况下，该方法直接返回原始 Bean，不做任何修改。
+	 *
+	 * <p>
+	 * 应用场景
+	 * <p>
+	 * <ul>
+	 *     <li>	创建 AOP 代理：Spring AOP 利用这个方法为 Bean 创建动态代理；</li>
+	 * 	   <li>	修改 Bean 属性：虽然通常在 postProcessBeforeInitialization 中处理，但也可以在此阶段进行某些调整；</li>
+	 * 	   <li>	注册 Bean 到其他系统：可以在 Bean 初始化完成后注册到外部系统中。</li>
+	 * </ul>
 	 *
 	 * @param bean the new bean instance
 	 * @param beanName the name of the bean
