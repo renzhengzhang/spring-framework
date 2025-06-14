@@ -145,7 +145,7 @@ public abstract class AopUtils {
 				SpringProxy.class.isAssignableFrom(targetType)) {
 			throw new IllegalStateException(String.format(
 					"Need to invoke method '%s' found on proxy for target class '%s' but cannot " +
-					"be delegated to target bean. Switch its visibility to package or protected.",
+							"be delegated to target bean. Switch its visibility to package or protected.",
 					method.getName(), method.getDeclaringClass().getSimpleName()));
 		}
 		return methodToUse;
@@ -153,6 +153,10 @@ public abstract class AopUtils {
 
 	/**
 	 * Determine whether the given method is an "equals" method.
+	 *
+	 * <p>
+	 * 判断给定的方法是否是 {@link java.lang.Object#equals(Object)} 方法
+	 *
 	 * @see java.lang.Object#equals
 	 */
 	public static boolean isEqualsMethod(@Nullable Method method) {
@@ -161,6 +165,10 @@ public abstract class AopUtils {
 
 	/**
 	 * Determine whether the given method is a "hashCode" method.
+	 *
+	 * <p>
+	 * 判断给定的方法是否是 {@link java.lang.Object#equals(Object)} 方法
+	 *
 	 * @see java.lang.Object#hashCode
 	 */
 	public static boolean isHashCodeMethod(@Nullable Method method) {
@@ -231,27 +239,36 @@ public abstract class AopUtils {
 	 */
 	public static boolean canApply(Pointcut pc, Class<?> targetClass, boolean hasIntroductions) {
 		Assert.notNull(pc, "Pointcut must not be null");
+
+		// 1. 检查 Pointcut 的 ClassFilter 是否匹配 targetClass
+		//    类级别都不匹配了，直接返回 false，避免后续的方法级别的检查
 		if (!pc.getClassFilter().matches(targetClass)) {
 			return false;
 		}
 
+		// 2. 方法匹配器检查
 		MethodMatcher methodMatcher = pc.getMethodMatcher();
 		if (methodMatcher == MethodMatcher.TRUE) {
+			// 匹配任何方法，直接返回 true
 			// No need to iterate the methods if we're matching any method anyway...
 			return true;
 		}
 
+		// 3. 判断 MethodMatcher 是否是 IntroductionAwareMethodMatcher，即支持判断存在 IntroductionAdvisor 时的情况
 		IntroductionAwareMethodMatcher introductionAwareMethodMatcher = null;
 		if (methodMatcher instanceof IntroductionAwareMethodMatcher iamm) {
 			introductionAwareMethodMatcher = iamm;
 		}
 
+		// 4. 获取 targetClass 目标类的原始类以及所有接口
 		Set<Class<?>> classes = new LinkedHashSet<>();
 		if (!Proxy.isProxyClass(targetClass)) {
+			// 如果不是 JDK 动态代理，还需要考虑 CGLIB 代理，这里需要获取原始类
 			classes.add(ClassUtils.getUserClass(targetClass));
 		}
 		classes.addAll(ClassUtils.getAllInterfacesForClassAsSet(targetClass));
 
+		// 5. 遍历目标类及其所有接口的所有方法，只要有一个匹配则返回 true
 		for (Class<?> clazz : classes) {
 			Method[] methods = ReflectionUtils.getAllDeclaredMethods(clazz);
 			for (Method method : methods) {
@@ -270,6 +287,12 @@ public abstract class AopUtils {
 	 * Can the given advisor apply at all on the given class?
 	 * This is an important test as it can be used to optimize
 	 * out an advisor for a class.
+	 *
+	 * <p>
+	 * 判断给定的 Advisor 是否能够应用到 targetClass 上
+	 * <p>
+	 * 默认不考虑是否存在 IntroductionAdvisor
+	 *
 	 * @param advisor the advisor to check
 	 * @param targetClass class we're testing
 	 * @return whether the pointcut can apply on any method
@@ -282,10 +305,14 @@ public abstract class AopUtils {
 	 * Can the given advisor apply at all on the given class?
 	 * <p>This is an important test as it can be used to optimize out an advisor for a class.
 	 * This version also takes into account introductions (for IntroductionAwareMethodMatchers).
+	 *
+	 * <p>
+	 * 判断给定的 Advisor 是否能够应用到 targetClass 上
+	 *
 	 * @param advisor the advisor to check
 	 * @param targetClass class we're testing
 	 * @param hasIntroductions whether the advisor chain for this bean includes
-	 * any introductions
+	 * any introductions, 即该 bean 是否已经存在了能够应用在其上面的 IntroductionAdvisor
 	 * @return whether the pointcut can apply on any method
 	 */
 	public static boolean canApply(Advisor advisor, Class<?> targetClass, boolean hasIntroductions) {
@@ -304,22 +331,35 @@ public abstract class AopUtils {
 	/**
 	 * Determine the sublist of the {@code candidateAdvisors} list
 	 * that is applicable to the given class.
+	 *
+	 * <p>
+	 * 从候选的 Advisor 列表中筛选出能够应用到指定 Bean 的 Advisor
+	 *
 	 * @param candidateAdvisors the Advisors to evaluate
 	 * @param clazz the target class
 	 * @return sublist of Advisors that can apply to an object of the given class
 	 * (may be the incoming List as-is)
 	 */
 	public static List<Advisor> findAdvisorsThatCanApply(List<Advisor> candidateAdvisors, Class<?> clazz) {
+		// 1. 如果候选 Advisor 列表为空，则直接返回
 		if (candidateAdvisors.isEmpty()) {
 			return candidateAdvisors;
 		}
+
 		List<Advisor> eligibleAdvisors = new ArrayList<>();
+
+		// 2. 优先处理 IntroductionAdvisor
+		// IntroductionAdvisor 是特殊类型的通知器，用于为目标类引入新的接口实现，可能会影响后续普通通知器的匹配逻辑
 		for (Advisor candidate : candidateAdvisors) {
 			if (candidate instanceof IntroductionAdvisor && canApply(candidate, clazz)) {
 				eligibleAdvisors.add(candidate);
 			}
 		}
+
+		// 标记是否存在符合条件的 IntroductionAdvisor
 		boolean hasIntroductions = !eligibleAdvisors.isEmpty();
+
+		// 3. 处理普通 Advisor
 		for (Advisor candidate : candidateAdvisors) {
 			if (candidate instanceof IntroductionAdvisor) {
 				// already processed

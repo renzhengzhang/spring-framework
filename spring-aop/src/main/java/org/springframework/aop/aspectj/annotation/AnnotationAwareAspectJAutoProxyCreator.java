@@ -20,12 +20,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.aspectj.lang.annotation.Aspect;
 import org.springframework.aop.Advisor;
 import org.springframework.aop.aspectj.autoproxy.AspectJAwareAdvisorAutoProxyCreator;
 import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
+
+import javax.swing.Spring;
 
 /**
  * {@link AspectJAwareAdvisorAutoProxyCreator} subclass that processes all AspectJ
@@ -86,11 +89,23 @@ public class AnnotationAwareAspectJAutoProxyCreator extends AspectJAwareAdvisorA
 	}
 
 
+	/**
+	 * <p>
+	 * 基于 BeanFactory 获取所有 Advisor
+	 *
+	 * <ol>
+	 *     <li>获取 BeanFactory 中所有 Advisor 类型的实例；</li>
+	 *     <li>基于被 @Aspect 注解的 Bean 转换为 Advisor</li>
+	 * </ol>
+	 */
 	@Override
 	protected List<Advisor> findCandidateAdvisors() {
 		// Add all the Spring advisors found according to superclass rules.
+		// 从 BeanFactory 中检索符合条件的 Advisor Bean，以便进行 auto-proxying 操作
 		List<Advisor> advisors = super.findCandidateAdvisors();
+
 		// Build Advisors for all AspectJ aspects in the bean factory.
+		// 将容器中的 @Aspect 注解类转换为 Spring AOP 可识别的 Advisors
 		if (this.aspectJAdvisorsBuilder != null) {
 			advisors.addAll(this.aspectJAdvisorsBuilder.buildAspectJAdvisors());
 		}

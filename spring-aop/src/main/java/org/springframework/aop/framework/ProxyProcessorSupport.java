@@ -96,27 +96,39 @@ public class ProxyProcessorSupport extends ProxyConfig implements Ordered, BeanC
 	/**
 	 * Check the interfaces on the given bean class and apply them to the {@link ProxyFactory},
 	 * if appropriate.
+	 *
+	 * <p>
+	 * 评估和决定是否使用基于接口的 JDK 动态代理
+	 *
 	 * <p>Calls {@link #isConfigurationCallbackInterface} and {@link #isInternalLanguageInterface}
 	 * to filter for reasonable proxy interfaces, falling back to a target-class proxy otherwise.
-	 * @param beanClass the class of the bean
+	 * @param beanClass the class of the bean, 要被代理的目标 beanClass
 	 * @param proxyFactory the ProxyFactory for the bean
 	 */
 	protected void evaluateProxyInterfaces(Class<?> beanClass, ProxyFactory proxyFactory) {
+		// 获取目标类实现的所有接口，包括直接实现的接口和继承的接口
 		Class<?>[] targetInterfaces = ClassUtils.getAllInterfacesForClass(beanClass, getProxyClassLoader());
+
+		// 评估是否需要使用基于接口的 JDK 动态代理
 		boolean hasReasonableProxyInterface = false;
 		for (Class<?> ifc : targetInterfaces) {
+			// 1. 排除配置回调接口，例如 InitializingBean、DisposableBean 等；
+			// 2. 排除内部语言接口，例如 groovy.lang.GroovyObject、cglib.proxy.Factory
 			if (!isConfigurationCallbackInterface(ifc) && !isInternalLanguageInterface(ifc) &&
 					ifc.getMethods().length > 0) {
 				hasReasonableProxyInterface = true;
 				break;
 			}
 		}
+
+		// 存在合理的代理接口，则使用 JDK 动态代理，将目标类实现的接口添加到 ProxyFactory
 		if (hasReasonableProxyInterface) {
 			// Must allow for introductions; can't just set interfaces to the target's interfaces only.
 			for (Class<?> ifc : targetInterfaces) {
 				proxyFactory.addInterface(ifc);
 			}
 		}
+		// 没有合理代理接口，则使用 CGLIB 代理
 		else {
 			proxyFactory.setProxyTargetClass(true);
 		}

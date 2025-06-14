@@ -504,6 +504,10 @@ public abstract class ReflectionUtils {
 
 	/**
 	 * Determine whether the given method is an "equals" method.
+	 *
+	 * <p>
+	 * 判断给定的方法是否是 {@link java.lang.Object#equals(Object)} 方法
+	 *
 	 * @see java.lang.Object#equals(Object)
 	 */
 	public static boolean isEqualsMethod(@Nullable Method method) {
@@ -513,6 +517,10 @@ public abstract class ReflectionUtils {
 
 	/**
 	 * Determine whether the given method is a "hashCode" method.
+	 *
+	 * <p>
+	 * 判断给定的方法是否是 {@link java.lang.Object#hashCode()} 方法
+	 *
 	 * @see java.lang.Object#hashCode()
 	 */
 	public static boolean isHashCodeMethod(@Nullable Method method) {

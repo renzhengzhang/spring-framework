@@ -104,9 +104,22 @@ public class ProxyFactory extends ProxyCreatorSupport {
 	 * <p>Uses the given class loader (if necessary for proxy creation).
 	 * @param classLoader the class loader to create the proxy with
 	 * (or {@code null} for the low-level proxy facility's default)
+	 *
+	 * <p>
+	 * 依据当前 ProxyFactory 的配置，委托给 AopProxyFactory 创建一个新的 proxy
+	 *
+	 * <p>
+	 * <ul>
+	 *   <li>可重复调用：可以多次调用来创建新的代理实例；</li>
+	 *   <li>动态配置：如果在调用之间添加或移除了接口、{@link Interceptor}s，生成的代理会反映这些变化；</li>
+	 *   <li>类加载器控制：允许指定特定的类加载器来创建代理，如果传入 null 则使用默认的类加载器。</li>
+	 * </ul>
+	 *
 	 * @return the proxy object
 	 */
 	public Object getProxy(@Nullable ClassLoader classLoader) {
+		// 1. 根据当前 ProxyFactory 的配置创建合适的 AopProxy，JdkDynamicAopProxy 或者 ObjenesisCglibAopProxy
+		// 2. 使用指定的类加载器创建实际的 proxy
 		return createAopProxy().getProxy(classLoader);
 	}
 

@@ -25,6 +25,12 @@ import org.springframework.lang.Nullable;
  * (via {@link org.springframework.aop.framework.Advised})
  * as well as by {@link TargetSource TargetSources}.
  *
+ * <p>
+ * 获取 AOP Proxy 对象背后的真实目标类的接口，用来被 AOP Proxy 对象、代理工厂以及 TargetSource 实现。
+ *
+ * <p>
+ * Spring 提供了工具方法来简化这个过程: {@code Class<?> targetClass = AopUtils.getTargetClass(object);}
+ *
  * @author Juergen Hoeller
  * @since 2.0.3
  * @see org.springframework.aop.support.AopUtils#getTargetClass(Object)
@@ -34,6 +40,10 @@ public interface TargetClassAware {
 	/**
 	 * Return the target class behind the implementing object
 	 * (typically a proxy configuration or an actual proxy).
+	 *
+	 * <p>
+	 * 返回 AOP Proxy 对象背后的真实目标类
+	 *
 	 * @return the target Class, or {@code null} if not known
 	 */
 	@Nullable

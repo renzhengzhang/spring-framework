@@ -84,6 +84,10 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 
 	/**
 	 * Find all eligible Advisors for auto-proxying this class.
+	 *
+	 * <p>
+	 * 查找所有可应用于 beanName 的 Advisor 实例
+	 *
 	 * @param beanClass the clazz to find advisors for
 	 * @param beanName the name of the currently proxied bean
 	 * @return the empty List, not {@code null},
@@ -93,27 +97,44 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 	 * @see #extendAdvisors
 	 */
 	protected List<Advisor> findEligibleAdvisors(Class<?> beanClass, String beanName) {
+		// 1. 找到所有的候选 Advisor
 		List<Advisor> candidateAdvisors = findCandidateAdvisors();
+
+		// 2. 筛选出可以应用到当前 Bean 的 Advisor
 		List<Advisor> eligibleAdvisors = findAdvisorsThatCanApply(candidateAdvisors, beanClass, beanName);
+
+		// 3. 扩展 Advisor(供子类重写)
 		extendAdvisors(eligibleAdvisors);
+
+		// 4. 对 Advisor 进行排序
 		if (!eligibleAdvisors.isEmpty()) {
 			eligibleAdvisors = sortAdvisors(eligibleAdvisors);
 		}
+
 		return eligibleAdvisors;
 	}
 
 	/**
 	 * Find all candidate Advisors to use in auto-proxying.
+	 *
+	 * <p>
+	 * 检索符合条件的 Advisor 类型的 Bean 实例
+	 *
 	 * @return the List of candidate Advisors
 	 */
 	protected List<Advisor> findCandidateAdvisors() {
 		Assert.state(this.advisorRetrievalHelper != null, "No BeanFactoryAdvisorRetrievalHelper available");
+		// 从 BeanFactory 中检索符合条件的 Advisor 类型的 Bean 实例
 		return this.advisorRetrievalHelper.findAdvisorBeans();
 	}
 
 	/**
 	 * Search the given candidate Advisors to find all Advisors that
 	 * can apply to the specified bean.
+	 *
+	 * <p>
+	 * 从候选的 Advisor 列表中筛选出能够应用到指定 Bean 的 Advisor
+	 *
 	 * @param candidateAdvisors the candidate Advisors
 	 * @param beanClass the target's bean class
 	 * @param beanName the target's bean name
@@ -123,8 +144,10 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 	protected List<Advisor> findAdvisorsThatCanApply(
 			List<Advisor> candidateAdvisors, Class<?> beanClass, String beanName) {
 
+		// 使用 ProxyCreationContent 跟踪当前处理的 Bean，主要用于避免循环依赖和提供上下文信息
 		ProxyCreationContext.setCurrentProxiedBeanName(beanName);
 		try {
+			// 确定哪些 Advisor应该被应用到当前正在处理的 Bean 上
 			return AopUtils.findAdvisorsThatCanApply(candidateAdvisors, beanClass);
 		}
 		finally {

@@ -95,16 +95,32 @@ public class AspectJAwareAdvisorAutoProxyCreator extends AbstractAdvisorAutoProx
 		AspectJProxyUtils.makeAdvisorChainAspectJCapableIfNecessary(candidateAdvisors);
 	}
 
+	/**
+	 * 判断给定的 bean 是否需要跳过代理
+	 *
+	 * <p>
+	 * <ul>
+	 *     <li>当前 bean 为某个 AspectJPointcutAdvisor 类型的 Aspect；</li>
+	 *     <li>当前 bean 的 beanName 以 ".ORIGINAL" 结尾。</li>
+	 * </ul>
+	 */
 	@Override
 	protected boolean shouldSkip(Class<?> beanClass, String beanName) {
 		// TODO: Consider optimization by caching the list of the aspect names
+		// 切面 bean 需要跳过
 		List<Advisor> candidateAdvisors = findCandidateAdvisors();
 		for (Advisor advisor : candidateAdvisors) {
+			// TODO: 这里为什么是判断 AspectJPointcutAdvisor 而不是 InstantiationModelAwarePointcutAdvisor？
+			//  AnnotationAwareAspectJAutoProxyCreator.findCandidateAdvisors
+			//  在 BeanFactory 中通过 AspectJ 切面类获取到的 Advisor 是 InstantiationModelAwarePointcutAdvisorImpl
+
+			// 检查是否为 AspectJPointcutAdvisor 类型，并且切面名称与当前 bean 名称相同
 			if (advisor instanceof AspectJPointcutAdvisor pointcutAdvisor &&
 					pointcutAdvisor.getAspectName().equals(beanName)) {
 				return true;
 			}
 		}
+		// beanName 以 ".ORIGINAL" 结尾的原始 bean 需要跳过
 		return super.shouldSkip(beanClass, beanName);
 	}
 

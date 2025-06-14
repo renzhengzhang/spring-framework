@@ -30,6 +30,9 @@ import org.springframework.lang.Nullable;
  * <p>Application developers don't usually need to work with
  * {@code TargetSources} directly: this is an AOP framework interface.
  *
+ * <p>
+ * {@code TargetSource} 用来获取 AOP 拦截器链中的 "target"
+ *
  * @author Rod Johnson
  * @author Juergen Hoeller
  */
@@ -39,6 +42,12 @@ public interface TargetSource extends TargetClassAware {
 	 * Return the type of targets returned by this {@link TargetSource}.
 	 * <p>Can return {@code null}, although certain usages of a {@code TargetSource}
 	 * might just work with a predetermined target class.
+	 *
+	 * <p>
+	 * 返回此 TargetSource 返回的目标对象的类型
+	 * <p>
+	 * 可以返回 null，但某些 TargetSource 的用法可能需要预定的目标类
+	 *
 	 * @return the type of targets returned by this {@link TargetSource}
 	 */
 	@Override
@@ -49,6 +58,10 @@ public interface TargetSource extends TargetClassAware {
 	 * Will all calls to {@link #getTarget()} return the same object?
 	 * <p>In that case, there will be no need to invoke {@link #releaseTarget(Object)},
 	 * and the AOP framework can cache the return value of {@link #getTarget()}.
+	 *
+	 * <p>
+	 * 判断所有对 getTarget() 的调用是否返回同一个对象
+	 *
 	 * @return {@code true} if the target is immutable
 	 * @see #getTarget
 	 */
@@ -57,6 +70,10 @@ public interface TargetSource extends TargetClassAware {
 	/**
 	 * Return a target instance. Invoked immediately before the
 	 * AOP framework calls the "target" of an AOP method invocation.
+	 *
+	 * <p>
+	 * 返回目标实例，在 AOP 框架调用 AOP 方法调用的"目标"之前调用
+	 *
 	 * @return the target object which contains the joinpoint,
 	 * or {@code null} if there is no actual target instance
 	 * @throws Exception if the target object can't be resolved
@@ -67,6 +84,10 @@ public interface TargetSource extends TargetClassAware {
 	/**
 	 * Release the given target object obtained from the
 	 * {@link #getTarget()} method, if any.
+	 *
+	 * <p>
+	 * 释放 getTarget() 返回的目标对象
+	 *
 	 * @param target object obtained from a call to {@link #getTarget()}
 	 * @throws Exception if the object can't be released
 	 */

@@ -152,6 +152,10 @@ public abstract class AopProxyUtils {
 	 * <p>This will always add the {@link Advised} interface unless the AdvisedSupport's
 	 * {@link AdvisedSupport#setOpaque "opaque"} flag is on. Always adds the
 	 * {@link org.springframework.aop.SpringProxy} marker interface.
+	 *
+	 * <p>
+	 * 根据 AOP 配置，构建代理对象需要实现的所有接口
+	 *
 	 * @param advised the proxy config
 	 * @param decoratingProxy whether to expose the {@link DecoratingProxy} interface
 	 * @return the complete set of interfaces to proxy
@@ -161,33 +165,46 @@ public abstract class AopProxyUtils {
 	 * @see DecoratingProxy
 	 */
 	static Class<?>[] completeProxiedInterfaces(AdvisedSupport advised, boolean decoratingProxy) {
+		// 1. 获取用户指定的接口
 		Class<?>[] specifiedInterfaces = advised.getProxiedInterfaces();
+
+		// 2. 如果用户没有指定接口，需要进行分析
 		if (specifiedInterfaces.length == 0) {
 			// No user-specified interfaces: check whether target class is an interface.
 			Class<?> targetClass = advised.getTargetClass();
 			if (targetClass != null) {
+				// 目标类本身就是接口，直接使用
 				if (targetClass.isInterface()) {
 					advised.setInterfaces(targetClass);
 				}
+				// 目标类已经是代理类或 Lambda 类，使用其实现的接口
 				else if (Proxy.isProxyClass(targetClass) || ClassUtils.isLambdaClass(targetClass)) {
 					advised.setInterfaces(targetClass.getInterfaces());
 				}
 				specifiedInterfaces = advised.getProxiedInterfaces();
 			}
 		}
+
+		// 3. 过滤不适合代理的接口
 		List<Class<?>> proxiedInterfaces = new ArrayList<>(specifiedInterfaces.length + 3);
 		for (Class<?> ifc : specifiedInterfaces) {
 			// Only non-sealed interfaces are actually eligible for JDK proxying (on JDK 17)
+			// 在 JDK 17+ 环境中，sealed interface 不能被 JDK 动态代理，因此需要过滤掉
 			if (!ifc.isSealed()) {
 				proxiedInterfaces.add(ifc);
 			}
 		}
+
+		// 4. 添加 Spring AOP 标准接口：SpringProxy、Advised、DecoratingProxy
+		// SpringProxy 接口用于标识这是一个 Spring 创建的代理对象
 		if (!advised.isInterfaceProxied(SpringProxy.class)) {
 			proxiedInterfaces.add(SpringProxy.class);
 		}
+		// Advised 接口提供了访问代理配置的能力，包括获取 Advisors 列表、添加/移除 Advisor、获取目标对象信息
 		if (!advised.isOpaque() && !advised.isInterfaceProxied(Advised.class)) {
 			proxiedInterfaces.add(Advised.class);
 		}
+		// DecoratingProxy 接口用于获取被装饰对象的最终目标类，主要用于调试
 		if (decoratingProxy && !advised.isInterfaceProxied(DecoratingProxy.class)) {
 			proxiedInterfaces.add(DecoratingProxy.class);
 		}

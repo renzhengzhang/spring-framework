@@ -34,6 +34,9 @@ import org.springframework.util.Assert;
  * Helper for retrieving standard Spring Advisors from a BeanFactory,
  * for use with auto-proxying.
  *
+ * <p>
+ * 用于从 BeanFactory 中检索符合条件的 Advisor Bean，以便进行 auto-proxying 操作
+ *
  * @author Juergen Hoeller
  * @since 2.0.2
  * @see AbstractAdvisorAutoProxyCreator
@@ -44,6 +47,9 @@ public class BeanFactoryAdvisorRetrievalHelper {
 
 	private final ConfigurableListableBeanFactory beanFactory;
 
+	/**
+	 * 缓存已查找到的 Advisor Bean 名称数组，避免重复查找和初始化 Advisor Bean
+	 */
 	@Nullable
 	private volatile String[] cachedAdvisorBeanNames;
 
@@ -61,17 +67,25 @@ public class BeanFactoryAdvisorRetrievalHelper {
 	/**
 	 * Find all eligible Advisor beans in the current bean factory,
 	 * ignoring FactoryBeans and excluding beans that are currently in creation.
+	 *
+	 * <p>
+	 * 查找 BeanFactory 中所有符合条件的 Advisor 类实例
+	 *
 	 * @return the list of {@link org.springframework.aop.Advisor} beans
 	 * @see #isEligibleBean
 	 */
 	public List<Advisor> findAdvisorBeans() {
 		// Determine list of advisor bean names, if not cached already.
 		String[] advisorNames = this.cachedAdvisorBeanNames;
+
+		// 如果缓存中没有 Advisor beanName，则通过 BeanFactoryUtils 查找所有 Advisor.class 类型的 beanName
 		if (advisorNames == null) {
 			// Do not initialize FactoryBeans here: We need to leave all regular beans
 			// uninitialized to let the auto-proxy creator apply to them!
 			advisorNames = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(
 					this.beanFactory, Advisor.class, true, false);
+
+			// 保存缓存
 			this.cachedAdvisorBeanNames = advisorNames;
 		}
 		if (advisorNames.length == 0) {
@@ -81,6 +95,7 @@ public class BeanFactoryAdvisorRetrievalHelper {
 		List<Advisor> advisors = new ArrayList<>();
 		for (String name : advisorNames) {
 			if (isEligibleBean(name)) {
+				// 跳过正在创建的 Bean
 				if (this.beanFactory.isCurrentlyInCreation(name)) {
 					if (logger.isTraceEnabled()) {
 						logger.trace("Skipping currently created advisor '" + name + "'");
@@ -88,10 +103,13 @@ public class BeanFactoryAdvisorRetrievalHelper {
 				}
 				else {
 					try {
+						// 获取每个 Advisor beanName 对应的实例并添加到结果列表中
 						advisors.add(this.beanFactory.getBean(name, Advisor.class));
 					}
 					catch (BeanCreationException ex) {
 						Throwable rootCause = ex.getMostSpecificCause();
+
+						// 若获取过程中出现循环依赖异常 BeanCurrentlyInCreationException，则跳过该 Bean
 						if (rootCause instanceof BeanCurrentlyInCreationException bce) {
 							String bceBeanName = bce.getBeanName();
 							if (bceBeanName != null && this.beanFactory.isCurrentlyInCreation(bceBeanName)) {

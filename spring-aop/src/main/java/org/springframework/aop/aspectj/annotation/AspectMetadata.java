@@ -38,6 +38,10 @@ import org.springframework.aop.support.ComposablePointcut;
  * <p>Uses AspectJ 5 AJType reflection API, enabling us to work with different
  * AspectJ instantiation models such as "singleton", "pertarget" and "perthis".
  *
+ * <p>
+ * 用于存储和管理一个 AspectJ 切面类的元数据信息。不仅支持对切面类的类型信息进行解析，还提供了与 Spring AOP 相关的额外功能，
+ * 例如根据 {@link Aspect} 注解的 perClause 生成对应的 Pointcut
+ *
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @since 2.0
@@ -50,18 +54,27 @@ public class AspectMetadata implements Serializable {
 	 * The name of this aspect as defined to Spring (the bean name) -
 	 * allows us to determine if two pieces of advice come from the
 	 * same aspect and hence their relative precedence.
+	 *
+	 * <p>
+	 * Aspect 在 Spring 容器中的 beanName，用于判断多个 Advice 是否来自同一个 Aspect 并确定其优先级
 	 */
 	private final String aspectName;
 
 	/**
 	 * The aspect class, stored separately for re-resolution of the
 	 * corresponding AjType on deserialization.
+	 *
+	 * <p>
+	 * Aspect 类的实际类对象，存储此值是为了在反序列化时重新解析
 	 */
 	private final Class<?> aspectClass;
 
 	/**
 	 * AspectJ reflection information.
 	 * <p>Re-resolved on deserialization since it isn't serializable itself.
+	 *
+	 * <p>
+	 * 使用 AspectJ 的反射 API (AjType) 获取的切面类型信息，用于识别切面特性
 	 */
 	private transient AjType<?> ajType;
 
@@ -69,6 +82,14 @@ public class AspectMetadata implements Serializable {
 	 * Spring AOP pointcut corresponding to the per clause of the
 	 * aspect. Will be the {@code Pointcut.TRUE} canonical instance in the
 	 * case of a singleton, otherwise an AspectJExpressionPointcut.
+	 *
+	 * <p>
+	 * 对应于切面 @Aspect 注解中定义的 perClause（实例化模型）的 Spring AOP Pointcut 表达式
+	 * <ul>
+	 *     <li>如果是单例模式，则使用 Pointcut.TRUE;</li>
+	 *     <li>如果是 pertarget 或 perthis，则使用 AspectJExpressionPointcut</li>
+	 *     <li>如果是 pertypewithin，则使用 ComposablePointcut 和 TypePatternClassFilter</li>
+	 * </ul>
 	 */
 	private final Pointcut perClausePointcut;
 
@@ -81,6 +102,7 @@ public class AspectMetadata implements Serializable {
 	public AspectMetadata(Class<?> aspectClass, String aspectName) {
 		this.aspectName = aspectName;
 
+		// 遍历类继承链，找到第一个带有 @Aspect 注解的类，并获取其 AjType
 		Class<?> currClass = aspectClass;
 		AjType<?> ajType = null;
 		while (currClass != Object.class) {
@@ -100,6 +122,7 @@ public class AspectMetadata implements Serializable {
 		this.aspectClass = ajType.getJavaClass();
 		this.ajType = ajType;
 
+		// 解析 @Aspect 注解中的 perClause，并根据不同的类型初始化 perClausePointcut
 		switch (this.ajType.getPerClause().getKind()) {
 			case SINGLETON -> {
 				this.perClausePointcut = Pointcut.TRUE;
@@ -122,6 +145,9 @@ public class AspectMetadata implements Serializable {
 
 	/**
 	 * Extract contents from String of form {@code pertarget(contents)}.
+	 *
+	 * <p>
+	 * 解析 @Aspect 注解的 value 值，提取其中的 perClause 内容（如 {@code pertarget(contents)} 中的 {@code contents}
 	 */
 	private String findPerClause(Class<?> aspectClass) {
 		String str = aspectClass.getAnnotation(Aspect.class).value();

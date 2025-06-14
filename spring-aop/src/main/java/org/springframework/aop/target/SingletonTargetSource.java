@@ -32,6 +32,9 @@ import org.springframework.util.ObjectUtils;
  * <p>This class is serializable. However, the actual serializability of a
  * SingletonTargetSource will depend on whether the target is serializable.
  *
+ * <p>
+ * {@link TargetSource} 接口的默认实现，持有一个不可变的目标对象。
+ *
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @see org.springframework.aop.framework.AdvisedSupport#setTarget(Object)

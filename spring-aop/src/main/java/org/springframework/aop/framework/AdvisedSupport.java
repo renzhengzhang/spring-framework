@@ -87,7 +87,11 @@ public class AdvisedSupport extends ProxyConfig implements Advised {
 	/** The AdvisorChainFactory to use. */
 	private AdvisorChainFactory advisorChainFactory;
 
-	/** Cache with Method as key and advisor chain List as value. */
+	/**
+	 * Cache with Method as key and advisor chain List as value.
+	 * <p>
+	 * 用于缓存 Method 对应的 MethodInterceptor chain
+	 */
 	private transient Map<MethodCacheKey, List<Object>> methodCache;
 
 	/**
@@ -344,6 +348,7 @@ public class AdvisedSupport extends ProxyConfig implements Advised {
 	 * @param advisors the advisors to register
 	 */
 	public void addAdvisors(Collection<Advisor> advisors) {
+		// 如果 frozen，则不允许添加 advisors
 		if (isFrozen()) {
 			throw new AopConfigException("Cannot add advisor: Configuration is frozen.");
 		}
@@ -353,8 +358,12 @@ public class AdvisedSupport extends ProxyConfig implements Advised {
 					validateIntroductionAdvisor(introductionAdvisor);
 				}
 				Assert.notNull(advisor, "Advisor must not be null");
+
+				// 保存 Advisor 至 this.advisors
 				this.advisors.add(advisor);
 			}
+
+			// 清空 methodCache
 			adviceChanged();
 		}
 	}
@@ -477,11 +486,17 @@ public class AdvisedSupport extends ProxyConfig implements Advised {
 	/**
 	 * Determine a list of {@link org.aopalliance.intercept.MethodInterceptor} objects
 	 * for the given method, based on this configuration.
+	 *
+	 * <p>
+	 * 为给定的 Method 构建 MethodInterceptor chain，
+	 * 返回结果可能包括 {@link org.aopalliance.intercept.MethodInterceptor} 和 {@link InterceptorAndDynamicMethodMatcher}
+	 *
 	 * @param method the proxied method
 	 * @param targetClass the target class
 	 * @return a List of MethodInterceptors (may also include InterceptorAndDynamicMethodMatchers)
 	 */
 	public List<Object> getInterceptorsAndDynamicInterceptionAdvice(Method method, @Nullable Class<?> targetClass) {
+		// 缓存机制，优先从 methodCache 中获取，获取不到则调用 AdvisorChainFactory 构建
 		return this.methodCache.computeIfAbsent(new MethodCacheKey(method), k ->
 				this.advisorChainFactory.getInterceptorsAndDynamicInterceptionAdvice(this, method, targetClass));
 	}

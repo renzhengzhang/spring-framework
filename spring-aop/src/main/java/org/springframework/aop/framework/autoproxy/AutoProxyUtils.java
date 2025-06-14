@@ -61,6 +61,12 @@ public abstract class AutoProxyUtils {
 	 * class rather than its interfaces. Checks the
 	 * {@link #PRESERVE_TARGET_CLASS_ATTRIBUTE "preserveTargetClass" attribute}
 	 * of the corresponding bean definition.
+	 *
+	 * <p>
+	 * 判断给定的 bean 是否应该使用其 targetClass 进行代理（即使用 CGLIB 代理），而不是接口代理（JDK 动态代理）
+	 * <p>
+	 * 通过 BeanDefinition 的 PRESERVE_TARGET_CLASS_ATTRIBUTE 属性判断
+	 *
 	 * @param beanFactory the containing ConfigurableListableBeanFactory
 	 * @param beanName the name of the bean
 	 * @return whether the given bean should be proxied with its target class
@@ -68,6 +74,10 @@ public abstract class AutoProxyUtils {
 	public static boolean shouldProxyTargetClass(
 			ConfigurableListableBeanFactory beanFactory, @Nullable String beanName) {
 
+		// 检查给定 bean 的 BeanDefinition 的 PRESERVE_TARGET_CLASS_ATTRIBUTE 属性是否为 true
+		// 可以通过如下方式指定使用 CGLIB 代理：
+		// 1. XML 配置：<aop:aspectj-autoproxy proxy-target-class="true"/>
+		// 2. 注解配置：@EnableAspectJAutoProxy(proxyTargetClass = true)
 		if (beanName != null && beanFactory.containsBeanDefinition(beanName)) {
 			BeanDefinition bd = beanFactory.getBeanDefinition(beanName);
 			return Boolean.TRUE.equals(bd.getAttribute(PRESERVE_TARGET_CLASS_ATTRIBUTE));
@@ -103,6 +113,10 @@ public abstract class AutoProxyUtils {
 
 	/**
 	 * Expose the given target class for the specified bean, if possible.
+	 *
+	 * <p>
+	 * 尽可能将 AOP 代理的 targetClass 暴露给 ConfigurableListableBeanFactory
+	 *
 	 * @param beanFactory the containing ConfigurableListableBeanFactory
 	 * @param beanName the name of the bean
 	 * @param targetClass the corresponding target class
@@ -111,6 +125,7 @@ public abstract class AutoProxyUtils {
 	static void exposeTargetClass(
 			ConfigurableListableBeanFactory beanFactory, @Nullable String beanName, Class<?> targetClass) {
 
+		// 在给定 bean 的 'merged' BeanDefinition 中设置 targetClass 属性
 		if (beanName != null && beanFactory.containsBeanDefinition(beanName)) {
 			beanFactory.getMergedBeanDefinition(beanName).setAttribute(ORIGINAL_TARGET_CLASS_ATTRIBUTE, targetClass);
 		}
@@ -120,16 +135,26 @@ public abstract class AutoProxyUtils {
 	 * Determine whether the given bean name indicates an "original instance"
 	 * according to {@link AutowireCapableBeanFactory#ORIGINAL_INSTANCE_SUFFIX},
 	 * skipping any proxy attempts for it.
+	 *
+	 * <p>
+	 * 判断给定的 beanName 是否是一个"原始实例"，beanName 如果以 ".ORIGINAL" 作为后缀表示这是一个原始实例
+	 *
+	 * <p>
+	 * 在 @Configuration 注解的配置类中，可以使用 @Bean("com.example.UserService.ORIGINAL") 声明一个原始实例，不用被代理
+	 *
 	 * @param beanName the name of the bean
 	 * @param beanClass the corresponding bean class
 	 * @since 5.1
 	 * @see AutowireCapableBeanFactory#ORIGINAL_INSTANCE_SUFFIX
 	 */
 	static boolean isOriginalInstance(String beanName, Class<?> beanClass) {
+		// beanName 不能为空
 		if (!StringUtils.hasLength(beanName) || beanName.length() !=
 				beanClass.getName().length() + AutowireCapableBeanFactory.ORIGINAL_INSTANCE_SUFFIX.length()) {
 			return false;
 		}
+
+		// beanName 以 beanClass.getName() 开头， 以 ".ORIGINAL" 作为结尾，说明是原始实例
 		return (beanName.startsWith(beanClass.getName()) &&
 				beanName.endsWith(AutowireCapableBeanFactory.ORIGINAL_INSTANCE_SUFFIX));
 	}

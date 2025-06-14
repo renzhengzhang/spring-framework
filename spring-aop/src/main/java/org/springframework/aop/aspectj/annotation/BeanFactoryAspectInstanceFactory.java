@@ -35,6 +35,15 @@ import org.springframework.util.ClassUtils;
  * Use a {@link LazySingletonAspectInstanceFactoryDecorator}
  * to wrap this to ensure only one new aspect comes back.
  *
+ * <p>
+ * 用于通过 BeanFactory 来创建和管理 AspectJ 切面实例
+ *
+ * <ul>
+ *     <li>Aspect 实例管理：负责从 BeanFactory 中获取 AspectJ 切面 Bean 实例，将 AspectJ 切面实例的生命周期管理委托给 BeanFactory；</li>
+ *     <li>元数据处理：实现了 MetadataAwareAspectInstanceFactory 接口，提供切面的元数据信息 AspectMetadata。</li>
+ * </ul>
+ *
+ *
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @since 2.0
@@ -46,8 +55,14 @@ public class BeanFactoryAspectInstanceFactory implements MetadataAwareAspectInst
 
 	private final BeanFactory beanFactory;
 
+	/**
+	 * AspectJ 切面 Bean 的 beanName
+	 */
 	private final String name;
 
+	/**
+	 * AspectJ 切面 Bean 的元数据
+	 */
 	private final AspectMetadata aspectMetadata;
 
 
@@ -76,6 +91,8 @@ public class BeanFactoryAspectInstanceFactory implements MetadataAwareAspectInst
 		Assert.notNull(name, "Bean name must not be null");
 		this.beanFactory = beanFactory;
 		this.name = name;
+
+		// 通过 BeanFactory 获取 AspectJ 切面 Bean 的类型，并创建 AspectMetadata
 		Class<?> resolvedType = type;
 		if (type == null) {
 			resolvedType = beanFactory.getType(name);
@@ -85,6 +102,9 @@ public class BeanFactoryAspectInstanceFactory implements MetadataAwareAspectInst
 	}
 
 
+	/**
+	 * 切面实例获取：直接委托给 BeanFactory 获取 Bean 实例，如果是 prototype 作用域，每次调用都会创建新实例
+	 */
 	@Override
 	public Object getAspectInstance() {
 		return this.beanFactory.getBean(this.name);
@@ -102,13 +122,30 @@ public class BeanFactoryAspectInstanceFactory implements MetadataAwareAspectInst
 		return this.aspectMetadata;
 	}
 
+	/**
+	 * 线程安全控制
+	 * <p>
+	 * 根据 Bean 的作用域采用不同的锁策略：
+	 * <ul>
+	 *     <li>Singleton Bean 依赖容器的单例语义，不需要额外锁；</li>
+	 *     <li>非 Singleton Bean 需要同步控制以避免并发问题。</li>
+	 *
+	 *
+	 *     <li>singleton：如果 Bean 作用域是 singleton，则直接返回 null，表示不进行线程安全控制；</li>
+	 *     <li>prototype：如果 Bean 作用域是 prototype，则使用 BeanFactory 的 singletonMutex 锁，
+	 *             如果 BeanFactory 不是 ConfigurableBeanFactory 类型的，则使用 BeanFactory 本身作为锁；</li>
+	 * </ul>
+	 */
 	@Override
 	@Nullable
 	public Object getAspectCreationMutex() {
+		// Singleton Bean 不进行线程安全控制
 		if (this.beanFactory.isSingleton(this.name)) {
 			// Rely on singleton semantics provided by the factory -> no local lock.
 			return null;
 		}
+		// 非 Singleton Bean 需要同步控制，使用 ConfigurableBeanFactory 的 singletonMutex，
+		// 或者 BeanFactoryAspectInstanceFactory 自身
 		else if (this.beanFactory instanceof ConfigurableBeanFactory cbf) {
 			// No singleton guarantees from the factory -> let's lock locally but
 			// reuse the factory's singleton lock, just in case a lazy dependency
@@ -134,11 +171,16 @@ public class BeanFactoryAspectInstanceFactory implements MetadataAwareAspectInst
 	public int getOrder() {
 		Class<?> type = this.beanFactory.getType(this.name);
 		if (type != null) {
+			// Singleton Bean 可以使用通过 Ordered 接口或获取顺序
 			if (Ordered.class.isAssignableFrom(type) && this.beanFactory.isSingleton(this.name)) {
 				return ((Ordered) this.beanFactory.getBean(this.name)).getOrder();
 			}
+
+			// 使用 @Order 注解获取顺序
 			return OrderUtils.getOrder(type, Ordered.LOWEST_PRECEDENCE);
 		}
+
+		// 默认使用最低优先级
 		return Ordered.LOWEST_PRECEDENCE;
 	}
 

@@ -73,12 +73,20 @@ public abstract class AbstractAspectJAdvisorFactory implements AspectJAdvisorFac
 	 * if it has the @Aspect annotation, and was not compiled by ajc. The reason for this latter test
 	 * is that aspects written in the code-style (AspectJ language) also have the annotation present
 	 * when compiled by ajc with the -1.5 flag, yet they cannot be consumed by Spring AOP.
+	 *
+	 * <p>
+	 * 判断某个类是否为 Spring AOP 可识别的 @Aspect 注解切面
 	 */
 	@Override
 	public boolean isAspect(Class<?> clazz) {
+		// 1. 类上有 @Aspect 注解
+		// 2. 不是由 AspectJ 编译器（ajc）编译生成的代码风格切面
 		return (hasAspectAnnotation(clazz) && !compiledByAjc(clazz));
 	}
 
+	/**
+	 * 检查类上是否存在 @Aspect 注解
+	 */
 	private boolean hasAspectAnnotation(Class<?> clazz) {
 		return (AnnotationUtils.findAnnotation(clazz, Aspect.class) != null);
 	}
@@ -86,6 +94,15 @@ public abstract class AbstractAspectJAdvisorFactory implements AspectJAdvisorFac
 	/**
 	 * We need to detect this as "code-style" AspectJ aspects should not be
 	 * interpreted by Spring AOP.
+	 *
+	 * <p>
+	 * 判断该切面是否是由 AspectJ 编译器（ajc）编译生成的 原生代码风格切面
+	 *
+	 * <p>
+	 * <b>原理</b>
+	 * <p>
+	 * AspectJ 编译器在编译 code-style 切面时会生成一些以 ajc$ 开头的字段（如 ajc$if$...）；
+	 * 如果发现这样的字段，则认为这个类是 ajc 编译的原生切面。
 	 */
 	static boolean compiledByAjc(Class<?> clazz) {
 		// The AJTypeSystem goes to great lengths to provide a uniform appearance between code-style and
@@ -102,9 +119,23 @@ public abstract class AbstractAspectJAdvisorFactory implements AspectJAdvisorFac
 	@Override
 	public void validate(Class<?> aspectClass) throws AopConfigException {
 		AjType<?> ajType = AjTypeSystem.getAjType(aspectClass);
+
+		// 验证是否为有效切面
 		if (!ajType.isAspect()) {
 			throw new NotAnAtAspectException(aspectClass);
 		}
+
+		// 检查不支持的实例化模型
+		// AspectJ 支持多种切面实例化模型：
+		// - 单例模型（默认）：				@Aspect 或 @Aspect("singleton")
+		// - Per-target 			模型：	@Aspect("pertarget(pointcut)")
+		// - Per-this   			模型：	@Aspect("perthis(pointcut)")
+		// - Per-control-flow 		模型：	@Aspect("percflow(pointcut)")
+		// - Per-control-flow-below 模型：	@Aspect("percflowbelow(pointcut)")
+
+		// PERCFLOW：在特定控制流中为每个线程创建切面实例
+		// PERCFLOWBELOW：在特定控制流下方为每个线程创建切面实例
+		// Spring AOP 基于代理机制，无法跟踪完整的调用栈控制流，因此不支持这些高级的 AspectJ 特性
 		if (ajType.getPerClause().getKind() == PerClauseKind.PERCFLOW) {
 			throw new AopConfigException(aspectClass.getName() + " uses percflow instantiation model: " +
 					"This is not supported in Spring AOP.");
@@ -118,12 +149,17 @@ public abstract class AbstractAspectJAdvisorFactory implements AspectJAdvisorFac
 	/**
 	 * Find and return the first AspectJ annotation on the given method
 	 * (there <i>should</i> only be one anyway...).
+	 *
+	 * <p>
+	 * 获取给定方法上的 AspectJ 注解，包括：Pointcut、Around、Before、After、AfterReturning、AfterThrowing
 	 */
 	@SuppressWarnings("unchecked")
 	@Nullable
 	protected static AspectJAnnotation findAspectJAnnotationOnMethod(Method method) {
 		for (Class<?> annotationType : ASPECTJ_ANNOTATION_CLASSES) {
 			AspectJAnnotation annotation = findAnnotation(method, (Class<Annotation>) annotationType);
+
+			// 找到一个直接返回
 			if (annotation != null) {
 				return annotation;
 			}

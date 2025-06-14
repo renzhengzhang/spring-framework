@@ -97,16 +97,26 @@ public class ProxyCreatorSupport extends AdvisedSupport {
 	/**
 	 * Subclasses should call this to get a new AOP proxy. They should <b>not</b>
 	 * create an AOP proxy with {@code this} as an argument.
+	 *
+	 * <p>
+	 * 为子类提供创建 AopProxy ({@link JdkDynamicAopProxy} 或者 {@link ObjenesisCglibAopProxy} ) 的统一入口
 	 */
 	protected final synchronized AopProxy createAopProxy() {
+		// 确保所有已经注册的 AdvisedSupportListener 被激活
 		if (!this.active) {
 			activate();
 		}
+
+		// 委托给 AopProxyFactory（默认是 DefaultAopProxyFactory）创建 AopProxy
+		// 当前对象 this 作为配置传递给 AopProxyFactory 的 createAopProxy 方法
 		return getAopProxyFactory().createAopProxy(this);
 	}
 
 	/**
 	 * Activate this proxy configuration.
+	 * <p>
+	 * 激活所有已经注册的 {@link AdvisedSupportListener}
+	 *
 	 * @see AdvisedSupportListener#activated
 	 */
 	private void activate() {

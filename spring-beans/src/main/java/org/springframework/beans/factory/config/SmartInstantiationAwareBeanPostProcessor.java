@@ -19,6 +19,7 @@ package org.springframework.beans.factory.config;
 import java.lang.reflect.Constructor;
 
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory;
 import org.springframework.lang.Nullable;
 
 /**
@@ -120,6 +121,28 @@ public interface SmartInstantiationAwareBeanPostProcessor extends InstantiationA
 	 * for the affected bean has been built for a call to this method already,
 	 * it will be exposes as final bean reference by default).
 	 * <p>The default implementation returns the given {@code bean} as-is.
+	 *
+	 * <p>
+	 * 获取一个 Bean 的早期引用，通常用于解决循环引用。
+	 * <p>
+	 * 为 SmartInstantiationAwareBeanPostProcessor 提供一个机会，在 target bean 完全初始化前，提前暴露一个 wrapper。
+	 * 这个暴露的对象应该和 postProcessBeforeInitialization / postProcessAfterInitialization 方法返回的结果相同。
+	 *
+	 *
+	 * <p>
+	 * <b>调用时机</b>
+	 * <p>
+	 * <ul>
+	 *     <li>循环引用时，在 SingletonRegistry 的三级缓存中拿到 ObjectFactory，
+	 *     	   调用其中的 {@link AbstractAutowireCapableBeanFactory#getEarlyBeanReference} 方法；</li>
+	 *     <li>Spring AOP 也是通过此方法提前暴露代理，避免代理对象和最终实例在循环引用时不一致</li>
+	 * </ul>
+	 *
+	 * <p>
+	 * <b>默认实现</b>
+	 * <p>
+	 * 不做任何处理，返回原始 bean 实例
+	 *
 	 * @param bean the raw bean instance
 	 * @param beanName the name of the bean
 	 * @return the object to expose as bean reference

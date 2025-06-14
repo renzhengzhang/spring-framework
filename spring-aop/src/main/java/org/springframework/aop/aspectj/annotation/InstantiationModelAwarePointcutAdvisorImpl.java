@@ -50,29 +50,60 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 
 	private static final Advice EMPTY_ADVICE = new Advice() {};
 
-
+	// ############## 基本信息 ##############
+	// 声明的 Pointcut
 	private final AspectJExpressionPointcut declaredPointcut;
 
+	// Advice Method 声明所在的 Class
 	private final Class<?> declaringClass;
 
+	/**
+	 * Advice Method 名称
+	 */
 	private final String methodName;
 
+	/**
+	 * Advice Method 参数类型
+	 */
 	private final Class<?>[] parameterTypes;
 
+	/**
+	 * Advice Method
+	 */
 	private transient Method aspectJAdviceMethod;
 
+
+	// ############## 工厂##############
+	/**
+	 * Advisor Factory
+	 */
 	private final AspectJAdvisorFactory aspectJAdvisorFactory;
 
+	/**
+	 * Aspect Instance Factory
+	 */
 	private final MetadataAwareAspectInstanceFactory aspectInstanceFactory;
 
 	private final int declarationOrder;
 
 	private final String aspectName;
 
+
+
+	// ############## 运行时信息 ##############
+	/**
+	 * 实际使用的 Pointcut
+	 */
 	private final Pointcut pointcut;
 
+	/**
+	 * 是否懒加载
+	 */
 	private final boolean lazy;
 
+	/**
+	 * 实例化的 Advice
+	 */
 	@Nullable
 	private Advice instantiatedAdvice;
 
@@ -84,8 +115,8 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 
 
 	public InstantiationModelAwarePointcutAdvisorImpl(AspectJExpressionPointcut declaredPointcut,
-			Method aspectJAdviceMethod, AspectJAdvisorFactory aspectJAdvisorFactory,
-			MetadataAwareAspectInstanceFactory aspectInstanceFactory, int declarationOrder, String aspectName) {
+													  Method aspectJAdviceMethod, AspectJAdvisorFactory aspectJAdvisorFactory,
+													  MetadataAwareAspectInstanceFactory aspectInstanceFactory, int declarationOrder, String aspectName) {
 
 		this.declaredPointcut = declaredPointcut;
 		this.declaringClass = aspectJAdviceMethod.getDeclaringClass();
@@ -97,8 +128,10 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 		this.declarationOrder = declarationOrder;
 		this.aspectName = aspectName;
 
+		// 延迟实例化模型（Per-target、Per-this 等）
 		if (aspectInstanceFactory.getAspectMetadata().isLazilyInstantiated()) {
 			// Static part of the pointcut is a lazy type.
+			// 动态 Point，支持 Aspect 的延迟实例化
 			Pointcut preInstantiationPointcut = Pointcuts.union(
 					aspectInstanceFactory.getAspectMetadata().getPerClausePointcut(), this.declaredPointcut);
 
@@ -109,6 +142,7 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 					this.declaredPointcut, preInstantiationPointcut, aspectInstanceFactory);
 			this.lazy = true;
 		}
+		// 实例化模型为单例模型，在 Advisor 创建时就立即创建 Advice
 		else {
 			// A singleton aspect.
 			this.pointcut = this.declaredPointcut;
@@ -139,6 +173,8 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 
 	/**
 	 * Lazily instantiate advice if necessary.
+	 * <p>
+	 * 懒加载 Advice
 	 */
 	@Override
 	public synchronized Advice getAdvice() {
@@ -273,7 +309,7 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 		private LazySingletonAspectInstanceFactoryDecorator aspectInstanceFactory;
 
 		public PerTargetInstantiationModelPointcut(AspectJExpressionPointcut declaredPointcut,
-				Pointcut preInstantiationPointcut, MetadataAwareAspectInstanceFactory aspectInstanceFactory) {
+												   Pointcut preInstantiationPointcut, MetadataAwareAspectInstanceFactory aspectInstanceFactory) {
 
 			this.declaredPointcut = declaredPointcut;
 			this.preInstantiationPointcut = preInstantiationPointcut;

@@ -77,6 +77,10 @@ public class BeanFactoryAspectJAdvisorsBuilder {
 	 * Look for AspectJ-annotated aspect beans in the current bean factory,
 	 * and return to a list of Spring AOP Advisors representing them.
 	 * <p>Creates a Spring Advisor for each AspectJ advice method.
+	 *
+	 * <p>
+	 * 将容器中的 @Aspect 注解类转换为 Spring AOP 可识别的 Advisors
+	 *
 	 * @return the list of {@link org.springframework.aop.Advisor} beans
 	 * @see #isEligibleBean
 	 */
@@ -89,8 +93,12 @@ public class BeanFactoryAspectJAdvisorsBuilder {
 				if (aspectNames == null) {
 					List<Advisor> advisors = new ArrayList<>();
 					aspectNames = new ArrayList<>();
+
+					// 获取当前 BeanFactory 中所有非 FactoryBean 的 beanName
 					String[] beanNames = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(
 							this.beanFactory, Object.class, true, false);
+
+					// 遍历并筛选切面 Bean
 					for (String beanName : beanNames) {
 						if (!isEligibleBean(beanName)) {
 							continue;
@@ -101,22 +109,30 @@ public class BeanFactoryAspectJAdvisorsBuilder {
 						if (beanType == null) {
 							continue;
 						}
+
+						// 通过是否被 @Aspect 注解来判断 Bean 类型是否为 AspectJ 切面
 						if (this.advisorFactory.isAspect(beanType)) {
 							aspectNames.add(beanName);
+
+							// 获取切面元信息，如切面的作用域
 							AspectMetadata amd = new AspectMetadata(beanType, beanName);
 							if (amd.getAjType().getPerClause().getKind() == PerClauseKind.SINGLETON) {
+								// 创建基于 BeanFactory 的 AspectInstanceFactory
 								MetadataAwareAspectInstanceFactory factory =
 										new BeanFactoryAspectInstanceFactory(this.beanFactory, beanName);
 								List<Advisor> classAdvisors = this.advisorFactory.getAdvisors(factory);
 								if (this.beanFactory.isSingleton(beanName)) {
+									// Aspect 类是单例，那么可以缓存 AspectInstanceFactory 生产的 Advisors
 									this.advisorsCache.put(beanName, classAdvisors);
 								}
 								else {
+									// Aspect 类不是单例，那么可以缓存 AspectInstanceFactory
 									this.aspectFactoryCache.put(beanName, factory);
 								}
 								advisors.addAll(classAdvisors);
 							}
 							else {
+								// 如果切面声明为 perthis 或 pertarget，但 Bean 是单例，抛出异常
 								// Per target or per this.
 								if (this.beanFactory.isSingleton(beanName)) {
 									throw new IllegalArgumentException("Bean with name '" + beanName +
@@ -129,6 +145,8 @@ public class BeanFactoryAspectJAdvisorsBuilder {
 							}
 						}
 					}
+
+					// 缓存所有的 AspectJ 切面 beanName
 					this.aspectBeanNames = aspectNames;
 					return advisors;
 				}
